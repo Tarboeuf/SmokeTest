@@ -55,6 +55,10 @@ internal class Program
             //}
 
             //var bytes = Encoding.UTF8.GetBytes(phrase);
+            using (StreamWriter sw = new StreamWriter($"{Guid.NewGuid}"))
+            {
+                sw.Write(Encoding.UTF8.GetString(b, 0, length));
+            }
             stream.Write(b, 0, length);
             client.Close();
             
