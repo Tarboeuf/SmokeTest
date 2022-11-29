@@ -17,6 +17,10 @@ await Task.WhenAll(tasks);
 static void HandleClient(TcpListener listener, List<Task> tasks, bool isFirst)
 {
     TcpClient client = listener.AcceptTcpClient();
+    if (isFirst)
+    {
+        tasks.Add(Task.Factory.StartNew(() => HandleClient(listener, tasks, true)));
+    }
     tasks.Add(Task.Factory.StartNew(() => HandleClient(listener, tasks, false)));
     NetworkStream stream = client.GetStream();
     StreamWriter writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true };
@@ -38,9 +42,5 @@ static void HandleClient(TcpListener listener, List<Task> tasks, bool isFirst)
             }
         }
         Console.WriteLine("Server saw disconnect from client.");
-    }
-    if(isFirst)
-    {
-        tasks.Add(Task.Factory.StartNew(() => HandleClient(listener, tasks, false)));
     }
 }
