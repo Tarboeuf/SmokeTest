@@ -44,8 +44,9 @@ internal class Program
 
             string phrase = "";
 
-            byte[] b = new byte[1024];
+            byte[] b = new byte[1024*1024];
             UTF8Encoding temp = new UTF8Encoding(true);
+            Span<byte> buffer = new Span<byte>(b);
             while (stream.Read(b, 0, b.Length) > 0)
             {
                 Write(13, $"_{Encoding.UTF8.GetString(b)}_");
@@ -56,7 +57,7 @@ internal class Program
             Write(log++, phrase);
             stream.Write(bytes, 0, bytes.Length);
             client.Close();
-            Write(clientNumber, $"Disconnected           {phrase}@.@");
+            Write(clientNumber, $"Disconnected          ");
 
 
             HandleClient(listener, clientNumber);
