@@ -64,18 +64,20 @@ static void HandleClient(TcpListener listener, int clientNumber)
                     isClosed = true;
                     continue;
                 }
-                stream.WriteByte(input);
+                //stream.WriteByte(input);
                 Console.CursorTop = clientNumber;
                 phrase += Encoding.UTF8.GetString(new byte[] { input });
                 if (input < 0)
                 {
-                    client.Close();
                     isClosed = true;
                 }
             }
             catch (Exception) { }
         }
         while (!isClosed);
+        var bytes = Encoding.UTF8.GetBytes(phrase);
+        stream.Write(bytes, 0, bytes.Length);
+        client.Close();
         Console.CursorLeft = 0;
         Console.CursorTop = clientNumber;
         Console.Write($"{clientNumber} : Disconnected           {phrase}");
