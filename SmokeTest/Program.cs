@@ -69,7 +69,7 @@ static void HandleClient(TcpListener listener, int clientNumber)
                 Console.CursorTop = 0;
                 Console.CursorLeft = 0;
                 Console.WriteLine(input);
-                if (input <= 0 || input == 4 || input == 26)
+                if (input <= 0 || input == 4 || input == 26 || input == 255)
                 {
                     isClosed = true;
                 }
