@@ -52,10 +52,10 @@ internal class Program
                 phrase += Encoding.UTF8.GetString(b).Trim();
             }
 
-            var bytes = Encoding.UTF8.GetBytes(phrase);
+            var bytes = Encoding.UTF8.GetBytes(phrase[0..^1]);
             stream.Write(bytes, 0, bytes.Length);
             client.Close();
-            Write(clientNumber, $"Disconnected           {phrase}@.@");
+            Write(clientNumber, $"Disconnected           {phrase[0..^1]}@.@");
 
 
             HandleClient(listener, clientNumber);
