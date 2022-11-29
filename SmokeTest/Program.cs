@@ -52,10 +52,11 @@ internal class Program
                 phrase += Encoding.UTF8.GetString(b).Trim();
             }
 
-            var bytes = Encoding.UTF8.GetBytes(phrase[0..^1]);
+            var bytes = Encoding.UTF8.GetBytes(phrase);
+            Write(log++, phrase);
             stream.Write(bytes, 0, bytes.Length);
             client.Close();
-            Write(clientNumber, $"Disconnected           {phrase[0..^1]}@.@");
+            Write(clientNumber, $"Disconnected           {phrase}@.@");
 
 
             HandleClient(listener, clientNumber);
@@ -67,8 +68,6 @@ internal class Program
             Console.CursorTop = clientNumber;
             Console.Write($"{clientNumber} : {message}                                                   ");
 
-            //Console.CursorTop = log++;
-            //Console.Write(message);
         }
     }
 }
