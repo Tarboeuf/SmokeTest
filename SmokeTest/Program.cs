@@ -48,7 +48,7 @@ internal class Program
             UTF8Encoding temp = new UTF8Encoding(true);
             while (stream.Read(b, 0, b.Length) > 0)
             {
-                Write(13, "Started");
+                Write(13, $"_{Encoding.UTF8.GetString(b)}_");
                 phrase += Encoding.UTF8.GetString(b).Trim();
             }
 
@@ -67,8 +67,8 @@ internal class Program
             Console.CursorTop = clientNumber;
             Console.Write($"{clientNumber} : {message}                                                   ");
 
-            Console.CursorTop = log++;
-            Console.Write(message);
+            //Console.CursorTop = log++;
+            //Console.Write(message);
         }
     }
 }
