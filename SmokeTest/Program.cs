@@ -10,12 +10,8 @@ TcpListener listener = new TcpListener(IPAddress.Any, port);
 listener.Start();
 
 List<Task> tasks = new List<Task>();
-
-for (int i = 0; i < 5; i++)
-{
-    Console.WriteLine("line");
-}
-for (int i = 0; i < 5; i++)
+Console.Clear();
+for (int i = 0; i < 10; i++)
 {
     tasks.Add(GetPool(listener, i));
 }
@@ -45,14 +41,13 @@ static void HandleClient(TcpListener listener, int clientNumber)
 
     NetworkStream stream = client.GetStream();
 
-    bool isClosed = false;
     string phrase = "";
 
     byte[] b = new byte[1024];
     UTF8Encoding temp = new UTF8Encoding(true);
     while (stream.Read(b, 0, b.Length) > 0)
     {
-        Console.CursorTop = 6;
+        Console.CursorTop = 13;
         Console.CursorLeft = 0;
         Console.WriteLine(temp.GetString(b));
         phrase += Encoding.UTF8.GetString(b);
