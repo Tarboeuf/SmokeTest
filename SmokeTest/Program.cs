@@ -65,9 +65,11 @@ static void HandleClient(TcpListener listener, int clientNumber)
                     continue;
                 }
                 //stream.WriteByte(input);
-                Console.CursorTop = clientNumber;
                 phrase += Encoding.UTF8.GetString(new byte[] { input });
-                if (input <= 0 || input == 4)
+                Console.CursorTop = 0;
+                Console.CursorLeft = 0;
+                Console.WriteLine(input);
+                if (input <= 0 || input == 4 || input == 26)
                 {
                     isClosed = true;
                 }
@@ -75,6 +77,7 @@ static void HandleClient(TcpListener listener, int clientNumber)
             catch (Exception) { }
         }
         while (!isClosed);
+        Console.CursorTop = clientNumber;
         var bytes = Encoding.UTF8.GetBytes(phrase);
         stream.Write(bytes, 0, bytes.Length);
         client.Close();
