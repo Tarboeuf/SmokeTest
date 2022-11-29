@@ -6,7 +6,7 @@ using System.Text;
 Console.WriteLine("Starting echo server...");
 
 int port = 10001;
-TcpListener listener = new TcpListener(IPAddress.Loopback, port);
+TcpListener listener = new TcpListener(IPAddress.Any, port);
 listener.Start();
 
 List<Task> tasks = new List<Task>();
