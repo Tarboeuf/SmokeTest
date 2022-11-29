@@ -67,7 +67,7 @@ static void HandleClient(TcpListener listener, int clientNumber)
                 //stream.WriteByte(input);
                 Console.CursorTop = clientNumber;
                 phrase += Encoding.UTF8.GetString(new byte[] { input });
-                if (input < 0)
+                if (input <= 0 || input == 4)
                 {
                     isClosed = true;
                 }
