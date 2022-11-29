@@ -42,20 +42,21 @@ internal class Program
 
             NetworkStream stream = client.GetStream();
 
-            string phrase = "";
+            //string phrase = "";
 
-            byte[] b = new byte[1024*1024];
+            byte[] b = new byte[1024*1024*128];
             UTF8Encoding temp = new UTF8Encoding(true);
             Span<byte> buffer = new Span<byte>(b);
-            while (stream.Read(b, 0, b.Length) > 0)
-            {
-                Write(13, $"_{Encoding.UTF8.GetString(b)}_");
-                phrase += Encoding.UTF8.GetString(b).Trim('\0');
-            }
+            var length = stream.Read(b, 0, b.Length);
+            //while (stream.Read(b, 0, b.Length) > 0)
+            //{
+            //    Write(13, $"_{Encoding.UTF8.GetString(b)}_");
+            //    //phrase += Encoding.UTF8.GetString(b).Trim('\0');
+            //}
 
-            var bytes = Encoding.UTF8.GetBytes(phrase);
-            Write(log++, phrase);
-            stream.Write(bytes, 0, bytes.Length);
+            //var bytes = Encoding.UTF8.GetBytes(phrase);
+            //Write(log++, phrase);
+            stream.Write(b, 0, length);
             client.Close();
             Write(clientNumber, $"Disconnected          ");
 
