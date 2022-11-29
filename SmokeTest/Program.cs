@@ -55,7 +55,7 @@ internal class Program
             var bytes = Encoding.UTF8.GetBytes(phrase);
             stream.Write(bytes, 0, bytes.Length);
             client.Close();
-            Write(clientNumber, $"Disconnected           {phrase}");
+            Write(clientNumber, $"Disconnected           {phrase}@.@");
 
 
             HandleClient(listener, clientNumber);
