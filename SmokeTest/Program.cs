@@ -47,43 +47,22 @@ static void HandleClient(TcpListener listener, int clientNumber)
 
     bool isClosed = false;
     string phrase = "";
-    while (!isClosed)
+
+    byte[] b = new byte[1024];
+    UTF8Encoding temp = new UTF8Encoding(true);
+    while (stream.Read(b, 0, b.Length) > 0)
     {
-        do
-        {
-            if(!client.Connected)
-            {
-                isClosed = true;
-                continue;
-            }
-            try
-            {
-                byte input = (byte)stream.ReadByte();
-                if (!client.Connected)
-                {
-                    isClosed = true;
-                    continue;
-                }
-                //stream.WriteByte(input);
-                phrase += Encoding.UTF8.GetString(new byte[] { input });
-                Console.CursorTop = 0;
-                Console.CursorLeft = 0;
-                Console.WriteLine(input);
-                if (input <= 0 || input == 4 || input == 26 || input == 255)
-                {
-                    isClosed = true;
-                }
-            }
-            catch (Exception) { }
-        }
-        while (!isClosed);
-        Console.CursorTop = clientNumber;
-        var bytes = Encoding.UTF8.GetBytes(phrase);
-        stream.Write(bytes, 0, bytes.Length);
-        client.Close();
+        Console.CursorTop = 6;
         Console.CursorLeft = 0;
-        Console.CursorTop = clientNumber;
-        Console.Write($"{clientNumber} : Disconnected           {phrase}");
+        Console.WriteLine(temp.GetString(b));
+        phrase += Encoding.UTF8.GetString(b);
     }
+
+    var bytes = Encoding.UTF8.GetBytes(phrase);
+    stream.Write(bytes, 0, bytes.Length);
+    client.Close();
+    Console.CursorLeft = 0;
+    Console.CursorTop = clientNumber;
+    Console.Write($"{clientNumber} : Disconnected           {phrase}");
     HandleClient(listener, clientNumber);
 }
