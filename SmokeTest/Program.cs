@@ -46,6 +46,7 @@ static void HandleClient(TcpListener listener, int clientNumber)
     NetworkStream stream = client.GetStream();
 
     bool isClosed = false;
+    string phrase = "";
     while (!isClosed)
     {
         do
@@ -65,7 +66,7 @@ static void HandleClient(TcpListener listener, int clientNumber)
                 }
                 stream.WriteByte(input);
                 Console.CursorTop = clientNumber;
-                Console.Write(Encoding.UTF8.GetString(new byte[] { input }));
+                phrase += Encoding.UTF8.GetString(new byte[] { input });
                 if (input < 0)
                 {
                     client.Close();
@@ -77,7 +78,7 @@ static void HandleClient(TcpListener listener, int clientNumber)
         while (!isClosed);
         Console.CursorLeft = 0;
         Console.CursorTop = clientNumber;
-        Console.Write($"{clientNumber} : Disconnected           ");
+        Console.Write($"{clientNumber} : Disconnected           {phrase}");
     }
     HandleClient(listener, clientNumber);
 }
