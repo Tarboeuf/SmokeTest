@@ -49,7 +49,7 @@ internal class Program
             while (stream.Read(b, 0, b.Length) > 0)
             {
                 Write(13, $"_{Encoding.UTF8.GetString(b)}_");
-                phrase += Encoding.UTF8.GetString(b).Trim();
+                phrase += Encoding.UTF8.GetString(b).Trim('\0');
             }
 
             var bytes = Encoding.UTF8.GetBytes(phrase);
