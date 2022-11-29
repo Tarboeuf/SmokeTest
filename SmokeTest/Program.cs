@@ -10,37 +10,74 @@ TcpListener listener = new TcpListener(IPAddress.Any, port);
 listener.Start();
 
 List<Task> tasks = new List<Task>();
-tasks.Add(Task.Factory.StartNew(() => HandleClient(listener, tasks, true)));
+
+for (int i = 0; i < 5; i++)
+{
+    Console.WriteLine("line");
+}
+for (int i = 0; i < 5; i++)
+{
+    tasks.Add(GetPool(listener, i));
+}
+
 
 await Task.WhenAll(tasks);
 
-static void HandleClient(TcpListener listener, List<Task> tasks, bool isFirst)
+
+static Task GetPool(TcpListener listener, int number)
 {
+    Console.CursorLeft = 0;
+    Console.CursorTop = number;
+    Console.Write($"{number} creation          ");
+    return Task.Factory.StartNew(() => HandleClient(listener, number));
+}
+
+static void HandleClient(TcpListener listener, int clientNumber)
+{
+    Console.CursorLeft = 0;
+    Console.CursorTop = clientNumber;
+    Console.Write($"{clientNumber} : Started        ");
     TcpClient client = listener.AcceptTcpClient();
-    if (isFirst)
-    {
-        tasks.Add(Task.Factory.StartNew(() => HandleClient(listener, tasks, true)));
-    }
-    tasks.Add(Task.Factory.StartNew(() => HandleClient(listener, tasks, false)));
+
+    Console.CursorLeft = 0;
+    Console.CursorTop = clientNumber;
+    Console.Write($"{clientNumber} : Connected           ");
+
     NetworkStream stream = client.GetStream();
-    StreamWriter writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true };
-    StreamReader reader = new StreamReader(stream, Encoding.ASCII);
 
     bool isClosed = false;
     while (!isClosed)
     {
-        string? inputLine = "";
-        while (inputLine != null && !isClosed)
+        do
         {
-            inputLine = reader.ReadLine();
-            writer.WriteLine(inputLine);
-            Console.WriteLine("Echoing string: " + inputLine);
-            if (inputLine == "quit")
+            if(!client.Connected)
             {
-                client.Close();
                 isClosed = true;
+                continue;
             }
+            try
+            {
+                byte input = (byte)stream.ReadByte();
+                if (!client.Connected)
+                {
+                    isClosed = true;
+                    continue;
+                }
+                stream.WriteByte(input);
+                Console.CursorTop = clientNumber;
+                Console.Write(Encoding.UTF8.GetString(new byte[] { input }));
+                if (input < 0)
+                {
+                    client.Close();
+                    isClosed = true;
+                }
+            }
+            catch (Exception) { }
         }
-        Console.WriteLine("Server saw disconnect from client.");
+        while (!isClosed);
+        Console.CursorLeft = 0;
+        Console.CursorTop = clientNumber;
+        Console.Write($"{clientNumber} : Disconnected           ");
     }
+    HandleClient(listener, clientNumber);
 }
