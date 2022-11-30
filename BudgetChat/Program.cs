@@ -23,6 +23,7 @@ var stayAlive = Task.Factory.StartNew(async () =>
                 await RemoveUser(user, users);
             }
         }
+        Thread.Sleep(10);
     }
 });
 await task;
