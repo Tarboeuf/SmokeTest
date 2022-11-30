@@ -9,7 +9,7 @@ await TcpServer.New()
 async Task<bool> Handle(Socket socket, byte[] buffer, int size)
 {
     List<Request> messages = new List<Request>();
-    Console.WriteLine("Receiving : ", string.Join(' ', buffer));
+    Console.WriteLine($"Receiving ({size}) : {string.Join(' ', buffer)}");
     for (int i = 0; i < size / 9; i++)
     {
         var data = buffer.AsSpan().Slice(i * 9, 9).ToArray();
