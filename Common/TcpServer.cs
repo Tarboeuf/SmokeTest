@@ -30,6 +30,62 @@ namespace Common
             await Task.WhenAll(tasks);
         }
 
+
+        public static async Task HandleFixedSize<T>(this Socket socket, int size, Func<Socket, byte[], T, Task<bool>> func)
+            where T : new()
+        {
+            List<Task> tasks = new List<Task>();
+            for (int i = 0; i < 15; i++)
+            {
+                tasks.Add(InternalFixedSizeHandleRaw<T>(socket, size, func, tasks));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        private static async Task InternalFixedSizeHandleRaw<T>(Socket socket, int size, Func<Socket, byte[], T, Task<bool>> func, List<Task> tasks)
+            where T : new()
+        {
+            T context = new();
+            while (true)
+            {
+                bool shouldClose = false;
+                var connection = await socket.AcceptAsync();
+
+                Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
+                byte[] buffer = new byte[size];
+                int received;
+                do
+                {
+                    try
+                    {
+                        if (!connection.Connected)
+                        {
+                            Console.WriteLine($"Connection closed");
+                            tasks.Add(InternalFixedSizeHandleRaw<T>(socket, size, func, tasks));
+                            return;
+                        }
+                        received = await connection.ReceiveAsync(buffer, SocketFlags.None);
+                        if (received > 0)
+                        {
+                            shouldClose = await func(connection, buffer, context);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                        return;
+                    }
+                } while (received > 0);
+
+                if (shouldClose)
+                {
+                    Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
+                    connection.Close();
+                }
+            }
+        }
+
         private static async Task InternalHandleRaw(Socket socket, Func<Socket, byte[], int, Task<bool>> func, List<Task> tasks)
         {
             while (true)
@@ -38,7 +94,7 @@ namespace Common
                 var connection = await socket.AcceptAsync();
 
                 Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
-                byte[] buffer = new byte[9 * 10];
+                byte[] buffer = new byte[1024 * 1024];
                 int received;
                 do
                 {

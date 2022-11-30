@@ -4,50 +4,41 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
 await TcpServer.New()
-    .HandleRaw(Handle);
+    .HandleFixedSize<Dictionary<int, int>>(9, Handle);
 
-async Task<bool> Handle(Socket socket, byte[] buffer, int size)
+async Task<bool> Handle(Socket socket, byte[] buffer, Dictionary<int, int> dataBase)
 {
-    List<Request> messages = new List<Request>();
-    Console.WriteLine($"Receiving ({size}) : {string.Join(' ', buffer)}");
-    for (int i = 0; i < size / 9; i++)
+    Console.WriteLine($"Receiving ({9}) : {string.Join(' ', buffer)}");
+
+    var request = new Request
     {
-        var data = buffer.AsSpan().Slice(i * 9, 9).ToArray();
-        messages.Add(new Request
-        {
-            Type = data[0] == 73 ? RequestType.Insert : data[0] == 81 ? RequestType.Query : RequestType.Error,
-            Value1 = MemoryMarshal.Read<int>(new ReadOnlySpan<byte>(data, 1, 4)),
-            Value2 = MemoryMarshal.Read<int>(new ReadOnlySpan<byte>(data, 5, 4)),
-        });
+        Type = buffer[0] == 73 ? RequestType.Insert : buffer[0] == 81 ? RequestType.Query : RequestType.Error,
+        Value1 = MemoryMarshal.Read<int>(new ReadOnlySpan<byte>(buffer, 1, 4)),
+        Value2 = MemoryMarshal.Read<int>(new ReadOnlySpan<byte>(buffer, 5, 4)),
+    };
+
+    switch (request.Type)
+    {
+        case RequestType.Insert:
+            dataBase.Add(request.Value1, request.Value2);
+            break;
+        case RequestType.Query:
+            var values = dataBase.Where(v => v.Key >= request.Value1 && v.Key <= request.Value2).Select(v => v.Value).ToList();
+            int result = 0;
+            if (values.Count > 0)
+            {
+                result = (int)values.Average();
+            }
+            var bytes = BitConverter.GetBytes(result);
+            await socket.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None);
+            break;
+        case RequestType.Error:
+            break;
+        default:
+            break;
     }
 
-    Dictionary<int, int> dataBase = new Dictionary<int, int>();
-
-    foreach (var item in messages)
-    {
-        switch (item.Type)
-        {
-            case RequestType.Insert:
-                dataBase.Add(item.Value1, item.Value2);
-                break;
-            case RequestType.Query:
-                var values = dataBase.Where(v => v.Key >= item.Value1 && v.Key <= item.Value2).Select(v => v.Value).ToList();
-                int result = 0;
-                if (values.Count > 0)
-                {
-                    result = (int)values.Average();
-                }
-                var bytes = BitConverter.GetBytes(result);
-                await socket.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None);
-                break;
-            case RequestType.Error:
-                break;
-            default:
-                break;
-        }
-    }
-
-    return true;
+    return false;
 }
 
 class Request
