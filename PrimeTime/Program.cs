@@ -10,15 +10,12 @@ await TcpServer.New()
 async Task<bool> Handle(Socket socket, string data)
 {
     Console.WriteLine($"Request : {data}");
-
+    bool result = false;
     foreach (var item in data.Split('\n', StringSplitOptions.RemoveEmptyEntries))
     {
-        if(await HandleSingleRequest(socket, item))
-        {
-            return true; 
-        }
+        result |= await HandleSingleRequest(socket, item);
     }
-    return false;
+    return result;
 }
 
 async Task<bool> HandleSingleRequest(Socket socket, string data)
