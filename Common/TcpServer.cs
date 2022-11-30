@@ -38,7 +38,7 @@ namespace Common
                 var connection = await socket.AcceptAsync();
 
                 Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
-                byte[] buffer = new byte[1024 * 1024];
+                byte[] buffer = new byte[9 * 10];
                 int received;
                 do
                 {
