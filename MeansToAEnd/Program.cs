@@ -29,11 +29,12 @@ async Task<bool> Handle(Socket socket, byte[] buffer, Dictionary<int, int> dataB
             {
                 result = (int)values.Average();
             }
+            Console.WriteLine($"Send : {result}");
             var bytes = BitConverter.GetBytes(result);
             await socket.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None);
             break;
         case RequestType.Error:
-            break;
+            return true;
         default:
             break;
     }

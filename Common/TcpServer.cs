@@ -49,12 +49,12 @@ namespace Common
             while (true)
             {
                 var connection = await socket.AcceptAsync();
+                Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
 
                 T context = new();
                 bool shouldClose = false;
                 while (!shouldClose && connection.Connected)
                 {
-                    Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
                     byte[] buffer = new byte[size];
                     for (int i = 0; i < size; i++)
                     {
