@@ -26,7 +26,7 @@ async Task StayAlive(List<User> users)
 {
     foreach (var user in users.ToList())
     {
-        if (!user.Socket.IsConnected())
+        if (!user?.Socket.IsConnected() ?? false)
         {
             await RemoveUser(user, users);
         }
@@ -79,8 +79,8 @@ async Task<bool> HandleUserName(Socket socket, string message, List<User> users,
     user.Name = message;
 
     var otherUsers = users.Where(u => u.Socket != socket && !string.IsNullOrEmpty(u.Name)).ToArray();
-    await Broadcast($"* The room contains: {string.Join(", ", otherUsers.Select(u => u.Name))}", user);
     await Broadcast($"* {user.Name} has entered the room", otherUsers);
+    await Broadcast($"* The room contains: {string.Join(", ", otherUsers.Select(u => u.Name))}", user);
     return false;
 }
 
