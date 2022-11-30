@@ -35,7 +35,10 @@ async Task<bool> Handle(Socket socket, string message, List<User> users)
     }
     string completeMessage = $"[{user.Name}] {message}";
     Console.WriteLine(completeMessage);
-    await users.Select(u => u.Socket).SendAsString(completeMessage);
+    await users
+        .Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name)
+        .Select(u => u.Socket)
+        .SendAsString(completeMessage);
     return true;
 }
 
@@ -53,7 +56,7 @@ static async Task<bool> HandleUserName(Socket socket, string message, List<User>
     }
     user.Name = message;
 
-    var otherUsers = users.Where(u => u.Name != message);
+    var otherUsers = users.Where(u => u.Socket != socket);
     await socket.SendAsString($"* The room contains: {string.Join(", ", otherUsers.Select(u => u.Name))}");
     await otherUsers.Select(u => u.Socket).SendAsString($"* {user.Name} has entered the room");
     return false;
