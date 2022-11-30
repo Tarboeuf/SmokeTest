@@ -8,7 +8,6 @@ await TcpServer.New()
 
 async Task<bool> Handle(Socket socket, byte[] buffer, Dictionary<int, int> dataBase)
 {
-    Console.WriteLine($"Receiving ({9}) : {string.Join(' ', buffer)}");
 
     var request = new Request
     {
@@ -16,6 +15,8 @@ async Task<bool> Handle(Socket socket, byte[] buffer, Dictionary<int, int> dataB
         Value1 = MemoryMarshal.Read<int>(new ReadOnlySpan<byte>(buffer, 1, 4)),
         Value2 = MemoryMarshal.Read<int>(new ReadOnlySpan<byte>(buffer, 5, 4)),
     };
+
+    Console.WriteLine($"Receiving ({9}) : {string.Join(' ', buffer)} ==> {request}");
 
     switch (request.Type)
     {
@@ -47,6 +48,11 @@ class Request
     public RequestType Type { get; set; }
     public int Value1 { get; set; }
     public int Value2 { get; set; }
+
+    public override string ToString()
+    {
+        return $"{Type} {Value1} {Value2}";
+    }
 }
 
 enum RequestType
