@@ -10,10 +10,22 @@ await TcpServer.New()
 async Task<bool> Handle(Socket socket, string data)
 {
     Console.WriteLine($"Request : {data}");
+
+    foreach (var item in data.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+    {
+        if(await HandleSingleRequest(socket, item))
+        {
+            return true; 
+        }
+    }
+}
+
+async Task<bool> HandleSingleRequest(Socket socket, string data)
+{
     try
     {
         var request = JsonSerializer.Deserialize<Request>(data);
-        if( request?.Method != "isPrime" )
+        if (request?.Method != "isPrime")
         {
             await Stop(socket);
             return true;
