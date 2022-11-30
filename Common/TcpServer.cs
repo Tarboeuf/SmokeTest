@@ -53,7 +53,11 @@ namespace Common
 
         public static async Task SendAsJson(this Socket socket, object response)
         {
-            await socket.SendAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response)), SocketFlags.None);
+            var value = JsonSerializer.Serialize(response);
+            Console.WriteLine($"Response : {value}");
+            var data = Encoding.UTF8.GetBytes(value);
+
+            await socket.SendAsync(data, SocketFlags.None);
         }
     }
 }

@@ -9,6 +9,7 @@ await TcpServer.New()
 
 async Task<bool> Handle(Socket socket, string data)
 {
+    Console.WriteLine($"Request : {data}");
     try
     {
         var request = JsonSerializer.Deserialize<Request>(data);
