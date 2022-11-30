@@ -18,6 +18,7 @@ async Task<bool> Handle(Socket socket, string data)
             return true; 
         }
     }
+    return false;
 }
 
 async Task<bool> HandleSingleRequest(Socket socket, string data)
