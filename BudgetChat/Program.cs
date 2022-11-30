@@ -12,21 +12,26 @@ var task = socket.HandleString((socket, message) => Handle(socket, message, user
         var user = GetUser(users, socket);
         await RemoveUser(user, users);
     });
+
 var stayAlive = Task.Factory.StartNew(async () =>
 {
     while(true)
     {
-        foreach (var user in users.ToList())
-        {
-            if (!user.Socket.IsConnected())
-            {
-                await RemoveUser(user, users);
-            }
-        }
-        Thread.Sleep(10);
+        await StayAlive(users);
     }
 });
 await task;
+
+async Task StayAlive(List<User> users)
+{
+    foreach (var user in users.ToList())
+    {
+        if (!user.Socket.IsConnected())
+        {
+            await RemoveUser(user, users);
+        }
+    }
+}
 
 Task RemoveUser(User user, List<User> users)
 {
@@ -79,7 +84,7 @@ static async Task<bool> HandleUserName(Socket socket, string message, List<User>
     return false;
 }
 
-static async Task Broadcast(string message, params User[] users)
+async Task Broadcast(string message, params User[] users)
 {
     Console.WriteLine($"--> {message} ({string.Join(", ", users.Select(u => u.Name))})");
     await users.Select(u => u.Socket).Where(s => s.Connected).SendAsString(message);

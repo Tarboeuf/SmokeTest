@@ -143,7 +143,6 @@ namespace Common
         public static async Task SendAsString(this Socket socket, string response)
         {
             var value = response + "\n";
-            Console.WriteLine($"Response : {value}");
             var data = Encoding.UTF8.GetBytes(value);
 
             await socket.SendAsync(data, SocketFlags.None);
