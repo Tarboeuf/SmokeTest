@@ -24,13 +24,13 @@ namespace Common
             List<Task> tasks = new List<Task>();
             for (int i = 0; i < 15; i++)
             {
-                tasks.Add(InternalHandleRaw(socket, func));
+                tasks.Add(InternalHandleRaw(socket, func, tasks));
             }
 
             await Task.WhenAll(tasks);
         }
 
-        private static async Task InternalHandleRaw(Socket socket, Func<Socket, byte[], int, Task<bool>> func)
+        private static async Task InternalHandleRaw(Socket socket, Func<Socket, byte[], int, Task<bool>> func, List<Task> tasks)
         {
             while (true)
             {
@@ -46,7 +46,8 @@ namespace Common
                     {
                         if (!connection.Connected)
                         {
-                            Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
+                            Console.WriteLine($"Connection closed");
+                            tasks.Add(InternalHandleRaw(socket, func, tasks));
                             return;
                         }
                         received = await connection.ReceiveAsync(buffer, SocketFlags.None);
