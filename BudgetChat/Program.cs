@@ -22,6 +22,7 @@ Task Init(Socket socket, List<User> users)
 
 async Task<bool> Handle(Socket socket, string message, List<User> users)
 {
+    message = message.Trim('\n');
     var user = GetUser(users, socket);
     if(string.IsNullOrEmpty(user.Name))
     {
