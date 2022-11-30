@@ -86,7 +86,7 @@ namespace Common
             {
                 bool shouldClose = false;
                 var connection = await socket.AcceptAsync();
-                initialisation?.Invoke(socket);
+                initialisation?.Invoke(connection);
 
                 Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
                 byte[] buffer = new byte[1024 * 1024];
