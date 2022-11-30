@@ -23,28 +23,29 @@ async Task<bool> HandleSingleRequest(Socket socket, string data)
     try
     {
         var request = JsonSerializer.Deserialize<Request>(data);
-        if (request?.Method != "isPrime")
+        if (request?.Method != "isPrime" || !request.Number.HasValue)
         {
             await Stop(socket);
             return true;
         }
-        var response = HandleRequest(request);
+        var response = HandlePrimeRequest(request.Number.Value);
         await socket.SendAsJson(response);
         return false;
     }
     catch (Exception)
     {
-        await Stop(socket);
+        await socket.SendAsString(data);
+        socket.Close();
         return true;
     }
 }
 
-Response HandleRequest(Request request)
+Response HandlePrimeRequest(double number)
 {
     return new Response
     {
         Method = "isPrime",
-        Prime = IsPrime((int)request.Number),
+        Prime = IsPrime(number),
     };
 }
 
@@ -80,7 +81,7 @@ public class Request
     public string? Method { get; set; }
 
     [JsonPropertyName("number")]
-    public double Number { get; set; }
+    public double? Number { get; set; }
 }
 
 public class Response

@@ -22,7 +22,7 @@ namespace Common
         public static async Task HandleRaw(this Socket socket, Func<Socket, byte[], int, Task<bool>> func)
         {
             List<Task> tasks = new List<Task>();
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 15; i++)
             {
                 tasks.Add(InternalHandleRaw(socket, func));
             }
@@ -78,6 +78,15 @@ namespace Common
         public static async Task SendAsJson(this Socket socket, object response)
         {
             var value = JsonSerializer.Serialize(response) + "\n";
+            Console.WriteLine($"Response : {value}");
+            var data = Encoding.UTF8.GetBytes(value);
+
+            await socket.SendAsync(data, SocketFlags.None);
+        }
+
+        public static async Task SendAsString(this Socket socket, string response)
+        {
+            var value = response + "\n";
             Console.WriteLine($"Response : {value}");
             var data = Encoding.UTF8.GetBytes(value);
 
