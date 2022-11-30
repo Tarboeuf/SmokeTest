@@ -32,10 +32,15 @@ async Task<bool> HandleSingleRequest(Socket socket, string data)
         await socket.SendAsJson(response);
         return false;
     }
-    catch (Exception)
+    catch (JsonException)
     {
-        await socket.SendAsString(data);
-        socket.Close();
+        await Stop(socket);
+        return true;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex);
+        await Stop(socket);
         return true;
     }
 }
@@ -72,7 +77,6 @@ static bool IsPrime(double number)
 static async Task Stop(Socket socket)
 {
     await socket.SendAsJson(new Response());
-    socket.Close();
 }
 
 public class Request
