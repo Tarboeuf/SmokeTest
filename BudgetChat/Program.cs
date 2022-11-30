@@ -82,7 +82,7 @@ static async Task<bool> HandleUserName(Socket socket, string message, List<User>
 static async Task Broadcast(string message, params User[] users)
 {
     Console.WriteLine($"--> {message} ({string.Join(", ", users.Select(u => u.Name))})");
-    await users.Select(u => u.Socket).SendAsString(message);
+    await users.Select(u => u.Socket).Where(s => s.Connected).SendAsString(message);
 }
 
 public class User
