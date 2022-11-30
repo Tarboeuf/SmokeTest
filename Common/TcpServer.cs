@@ -19,12 +19,13 @@ namespace Common
             return socket;
         }
 
-        public static async Task HandleRaw(this Socket socket, Func<Socket, byte[], int, Task<bool>> func)
+        public static async Task HandleRaw(this Socket socket, Func<Socket, byte[], int, Task<bool>> func, Action<Socket>? initilisation = null,
+            Action<Socket>? finalisation = null)
         {
             List<Task> tasks = new List<Task>();
             for (int i = 0; i < 15; i++)
             {
-                tasks.Add(InternalHandleRaw(socket, func, tasks));
+                tasks.Add(InternalHandleRaw(socket, func, tasks, initilisation, finalisation));
             }
 
             await Task.WhenAll(tasks);
@@ -75,12 +76,17 @@ namespace Common
             }
         }
 
-        private static async Task InternalHandleRaw(Socket socket, Func<Socket, byte[], int, Task<bool>> func, List<Task> tasks)
+        private static async Task InternalHandleRaw(Socket socket,
+            Func<Socket, byte[], int, Task<bool>> func, 
+            List<Task> tasks, 
+            Action<Socket>? initialisation,
+            Action<Socket>? finalisation)
         {
             while (true)
             {
                 bool shouldClose = false;
                 var connection = await socket.AcceptAsync();
+                initialisation?.Invoke(socket);
 
                 Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
                 byte[] buffer = new byte[1024 * 1024];
@@ -92,7 +98,8 @@ namespace Common
                         if (!connection.Connected)
                         {
                             Console.WriteLine($"Connection closed");
-                            tasks.Add(InternalHandleRaw(socket, func, tasks));
+                            tasks.Add(InternalHandleRaw(socket, func, tasks, initialisation, finalisation));
+                            finalisation?.Invoke(socket);
                             return;
                         }
                         received = await connection.ReceiveAsync(buffer, SocketFlags.None);
@@ -111,14 +118,18 @@ namespace Common
                 if (shouldClose)
                 {
                     Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
+                    finalisation?.Invoke(socket);
                     connection.Close();
                 }
             }
         }
 
-        public static Task HandleString(this Socket socket, Func<Socket, string, Task<bool>> func)
+        public static Task HandleString(this Socket socket,
+            Func<Socket, string, Task<bool>> func,
+            Action<Socket>? initilisation = null,
+            Action<Socket>? finalisation = null)
         {
-            return socket.HandleRaw((socket, buffer, received) => func(socket, Encoding.UTF8.GetString(buffer, 0, received)));
+            return socket.HandleRaw((socket, buffer, received) => func(socket, Encoding.UTF8.GetString(buffer, 0, received)), initilisation, finalisation);
         }
 
         public static async Task SendAsJson(this Socket socket, object response)
@@ -137,6 +148,20 @@ namespace Common
             var data = Encoding.UTF8.GetBytes(value);
 
             await socket.SendAsync(data, SocketFlags.None);
+        }
+
+        public static async Task SendAsString(this IEnumerable<Socket> sockets, string response)
+        {
+            var value = response + "\n";
+            Console.WriteLine($"Response : {value}");
+            var data = Encoding.UTF8.GetBytes(value);
+            foreach (var socket in sockets)
+            {
+                if(socket.Connected)
+                {
+                    await socket.SendAsync(data, SocketFlags.None);
+                }
+            }
         }
     }
 }
