@@ -80,7 +80,7 @@ static async Task Stop(Socket socket)
 public class Request
 {
     [JsonPropertyName("method")]
-    public string Method { get; set; }
+    public string? Method { get; set; }
 
     [JsonPropertyName("number")]
     public double Number { get; set; }
@@ -89,7 +89,7 @@ public class Request
 public class Response
 {
     [JsonPropertyName("method")]
-    public string Method { get; set; }
+    public string? Method { get; set; }
 
     [JsonPropertyName("prime")]
     public bool Prime { get; set; }
