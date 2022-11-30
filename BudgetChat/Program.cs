@@ -5,7 +5,7 @@ using System.Net.Sockets;
 List<User> users = new List<User>();
 var socket = TcpServer.New();
 
-socket.HandleString((socket, message) => Handle(socket, message, users), 
+await socket.HandleString((socket, message) => Handle(socket, message, users), 
     async socket => await Init(socket, users),
     async socket =>
     {
