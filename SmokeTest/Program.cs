@@ -23,20 +23,20 @@ internal class Program
         {
             var connection = await socket.AcceptAsync();
 
-            Console.WriteLine($"Connection accepted from {socket.RemoteEndPoint}");
+            Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
             byte[] buffer = new byte[1024 * 1024];
             int received;
             do
             {
-                received = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                received = await connection.ReceiveAsync(buffer, SocketFlags.None);
                 if (received > 0)
                 {
-                    await socket.SendAsync(new ArraySegment<byte>(buffer, 0, received), SocketFlags.None);
+                    await connection.SendAsync(new ArraySegment<byte>(buffer, 0, received), SocketFlags.None);
                 }
             } while (received > 0);
 
-            Console.WriteLine($"Connection closed to {socket.RemoteEndPoint}");
-            socket.Close();
+            Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
+            connection.Close();
         }
     }
 }
