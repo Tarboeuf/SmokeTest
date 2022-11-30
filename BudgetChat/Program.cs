@@ -69,7 +69,7 @@ User GetUser(List<User> users, Socket socket)
     return users.First(u => u.Socket == socket);
 }
 
-static async Task<bool> HandleUserName(Socket socket, string message, List<User> users, User user)
+async Task<bool> HandleUserName(Socket socket, string message, List<User> users, User user)
 {
     if (message.Length < 1 || message.Length > 16 || users.Any(u => u.Name == message))
     {
