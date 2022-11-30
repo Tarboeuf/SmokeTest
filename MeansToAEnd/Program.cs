@@ -12,8 +12,8 @@ async Task<bool> Handle(Socket socket, byte[] buffer, Dictionary<int, int> dataB
     var request = new Request
     {
         Type = buffer[0] == 73 ? RequestType.Insert : buffer[0] == 81 ? RequestType.Query : RequestType.Error,
-        Value1 = MemoryMarshal.Read<int>(new ReadOnlySpan<byte>(buffer, 1, 4)),
-        Value2 = MemoryMarshal.Read<int>(new ReadOnlySpan<byte>(buffer, 5, 4)),
+        Value1 = BitConverter.ToInt32(buffer.Reverse().ToArray(), 4),
+        Value2 = BitConverter.ToInt32(buffer.Reverse().ToArray(), 0),
     };
 
     Console.WriteLine($"Receiving ({9}) : {string.Join(' ', buffer)} ==> {request}");
