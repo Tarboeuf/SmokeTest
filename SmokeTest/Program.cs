@@ -12,69 +12,31 @@ internal class Program
         Console.WriteLine("Starting echo server...");
 
         int port = 10001;
-        TcpListener listener = new TcpListener(IPAddress.Any, port);
-        listener.Start();
 
-        List<Task> tasks = new List<Task>();
-        Console.Clear();
-        for (int i = 0; i < 10; i++)
+        var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+        socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+        socket.Bind(new IPEndPoint(IPAddress.Any, port));
+        socket.Listen();
+        Console.WriteLine($"Listening on {socket.LocalEndPoint}");
+
+        while (true)
         {
-            tasks.Add(GetPool(listener, i));
-        }
+            var connection = await socket.AcceptAsync();
 
-        await Task.WhenAll(tasks);
-
-
-        static Task GetPool(TcpListener listener, int number)
-        {
-            Console.CursorLeft = 0;
-            Console.CursorTop = number;
-            Console.Write($"{number} creation          ");
-            return Task.Factory.StartNew(() => HandleClient(listener, number));
-        }
-
-        static void HandleClient(TcpListener listener, int clientNumber)
-        {
-            Write(clientNumber, "Started");
-            TcpClient client = listener.AcceptTcpClient();
-
-            Write(clientNumber, "Connected");
-
-            NetworkStream stream = client.GetStream();
-
-            //string phrase = "";
-
-            byte[] b = new byte[1024*1024];
-            UTF8Encoding temp = new UTF8Encoding(true);
-            Span<byte> buffer = new Span<byte>(b);
-            var length = stream.Read(b, 0, b.Length);
-            //while (stream.Read(b, 0, b.Length) > 0)
-            //{
-            //    Write(13, $"_{Encoding.UTF8.GetString(b)}_");
-            //    //phrase += Encoding.UTF8.GetString(b).Trim('\0');
-            //}
-
-            //var bytes = Encoding.UTF8.GetBytes(phrase);
-            using (StreamWriter sw = new StreamWriter($"{Guid.NewGuid}"))
+            Console.WriteLine($"Connection accepted from {socket.RemoteEndPoint}");
+            byte[] buffer = new byte[1024 * 1024];
+            int received;
+            do
             {
-                sw.Write(Encoding.UTF8.GetString(b, 0, length));
-            }
-            stream.Write(b, 0, length);
-            client.Close();
-            
-            Write(log++, $"l = {length} lastChar = {(b.Length > 0 ? b[length - 1] : 0)}");
-            Write(clientNumber, $"Disconnected          ");
+                received = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                if (received > 0)
+                {
+                    await socket.SendAsync(new ArraySegment<byte>(buffer, 0, received), SocketFlags.None);
+                }
+            } while (received > 0);
 
-
-            HandleClient(listener, clientNumber);
-        }
-
-        static void Write(int clientNumber, string message)
-        {
-            Console.CursorLeft = 0;
-            Console.CursorTop = clientNumber;
-            Console.Write($"{clientNumber} : {message}                                                   ");
-
+            Console.WriteLine($"Connection closed to {socket.RemoteEndPoint}");
+            socket.Close();
         }
     }
 }
