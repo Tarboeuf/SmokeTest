@@ -64,7 +64,7 @@ static async Task Stop(Socket socket)
     socket.Close();
 }
 
-class Request
+public class Request
 {
     [JsonPropertyName("method")]
     public string Method { get; set; }
@@ -73,7 +73,7 @@ class Request
     public double Number { get; set; }
 }
 
-class Response
+public class Response
 {
     [JsonPropertyName("method")]
     public string Method { get; set; }

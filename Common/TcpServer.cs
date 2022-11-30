@@ -31,10 +31,23 @@ namespace Common
                 int received;
                 do
                 {
-                    received = await connection.ReceiveAsync(buffer, SocketFlags.None);
-                    if (received > 0)
+                    try
                     {
-                        shouldClose = await func(connection, buffer, received);
+                        if(!connection.Connected)
+                        {
+                            Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
+                            return;
+                        }
+                        received = await connection.ReceiveAsync(buffer, SocketFlags.None);
+                        if (received > 0)
+                        {
+                            shouldClose = await func(connection, buffer, received);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                        return;
                     }
                 } while (received > 0);
 
@@ -53,7 +66,7 @@ namespace Common
 
         public static async Task SendAsJson(this Socket socket, object response)
         {
-            var value = JsonSerializer.Serialize(response);
+            var value = JsonSerializer.Serialize(response) + "\n";
             Console.WriteLine($"Response : {value}");
             var data = Encoding.UTF8.GetBytes(value);
 
