@@ -46,42 +46,31 @@ namespace Common
         private static async Task InternalFixedSizeHandleRaw<T>(Socket socket, int size, Func<Socket, byte[], T, Task<bool>> func, List<Task> tasks)
             where T : new()
         {
-            T context = new();
             while (true)
             {
-                bool shouldClose = false;
                 var connection = await socket.AcceptAsync();
 
-                Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
-                byte[] buffer = new byte[size];
-                int received;
-                do
+                T context = new();
+                bool shouldClose = false;
+                while (!shouldClose && connection.Connected)
                 {
-                    try
+                    Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
+                    byte[] buffer = new byte[size];
+                    for (int i = 0; i < size; i++)
                     {
-                        if (!connection.Connected)
-                        {
-                            Console.WriteLine($"Connection closed");
-                            tasks.Add(InternalFixedSizeHandleRaw<T>(socket, size, func, tasks));
-                            return;
-                        }
-                        received = await connection.ReceiveAsync(buffer, SocketFlags.None);
-                        if (received > 0)
-                        {
-                            shouldClose = await func(connection, buffer, context);
-                        }
+                        byte[] tmp = new byte[1];
+                        await connection.ReceiveAsync(tmp, SocketFlags.None);
+                        buffer[i] = tmp[0];
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                        return;
-                    }
-                } while (received > 0);
 
-                if (shouldClose)
-                {
-                    Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
-                    connection.Close();
+                    shouldClose = await func(connection, buffer, context);
+
+                    if (shouldClose)
+                    {
+                        Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
+                        tasks.Add(InternalFixedSizeHandleRaw<T>(socket, size, func, tasks));
+                        connection.Close();
+                    }
                 }
             }
         }
