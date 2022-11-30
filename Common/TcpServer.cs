@@ -21,6 +21,17 @@ namespace Common
 
         public static async Task HandleRaw(this Socket socket, Func<Socket, byte[], int, Task<bool>> func)
         {
+            List<Task> tasks = new List<Task>();
+            for (int i = 0; i < 10; i++)
+            {
+                tasks.Add(InternalHandleRaw(socket, func));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        private static async Task InternalHandleRaw(Socket socket, Func<Socket, byte[], int, Task<bool>> func)
+        {
             while (true)
             {
                 bool shouldClose = false;
@@ -33,7 +44,7 @@ namespace Common
                 {
                     try
                     {
-                        if(!connection.Connected)
+                        if (!connection.Connected)
                         {
                             Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
                             return;
