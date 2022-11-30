@@ -153,7 +153,6 @@ namespace Common
         public static async Task SendAsString(this IEnumerable<Socket> sockets, string response)
         {
             var value = response + "\n";
-            Console.WriteLine($"Response : {value}");
             var data = Encoding.UTF8.GetBytes(value);
             foreach (var socket in sockets)
             {

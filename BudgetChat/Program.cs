@@ -11,21 +11,21 @@ await socket.HandleString((socket, message) => Handle(socket, message, users),
     {
         var user = GetUser(users, socket);
         users.Remove(user);
-        await users.Select(u => u.Socket).SendAsString($"* {user.Name} has left the room");
+        await Broadcast($"* {user.Name} has left the room", users.ToArray());
     });
 
 Task Init(Socket socket, List<User> users)
 {
     users.Add(new User(socket));
-    return socket.SendAsString("Welcome to budgetchat! What shall I call you?");
+    return socket.SendAsString("--> Welcome to budgetchat! What shall I call you?");
 }
 
 async Task<bool> Handle(Socket socket, string message, List<User> users)
 {
     message = message.Trim('\n');
-    Console.WriteLine($"Incoming : {message}");
     var user = GetUser(users, socket);
-    if(string.IsNullOrEmpty(user.Name))
+    Console.WriteLine($"<-- : {message} ({user.Name})");
+    if (string.IsNullOrEmpty(user.Name))
     {
         if(await HandleUserName(socket, message, users, user))
         {
@@ -35,10 +35,7 @@ async Task<bool> Handle(Socket socket, string message, List<User> users)
     }
     string completeMessage = $"[{user.Name}] {message}";
     Console.WriteLine(completeMessage);
-    await users
-        .Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name)
-        .Select(u => u.Socket)
-        .SendAsString(completeMessage);
+    await Broadcast(completeMessage, users.Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name).ToArray());
     return true;
 }
 
@@ -56,10 +53,16 @@ static async Task<bool> HandleUserName(Socket socket, string message, List<User>
     }
     user.Name = message;
 
-    var otherUsers = users.Where(u => u.Socket != socket);
-    await socket.SendAsString($"* The room contains: {string.Join(", ", otherUsers.Select(u => u.Name))}");
-    await otherUsers.Select(u => u.Socket).SendAsString($"* {user.Name} has entered the room");
+    var otherUsers = users.Where(u => u.Socket != socket).ToArray();
+    await Broadcast($"* The room contains: {string.Join(", ", otherUsers.Select(u => u.Name))}", user);
+    await Broadcast($"* {user.Name} has entered the room", otherUsers);
     return false;
+}
+
+static async Task Broadcast(string message, params User[] users)
+{
+    Console.WriteLine($"--> {message} ({string.Join(", ", users.Select(u => u.Name))})");
+    await users.Select(u => u.Socket).SendAsString(message);
 }
 
 public class User
