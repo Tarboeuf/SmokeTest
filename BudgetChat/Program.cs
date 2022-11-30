@@ -25,6 +25,7 @@ var stayAlive = Task.Factory.StartNew(async () =>
         }
     }
 });
+await task;
 
 Task RemoveUser(User user, List<User> users)
 {
