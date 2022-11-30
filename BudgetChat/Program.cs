@@ -5,14 +5,32 @@ using System.Net.Sockets;
 List<User> users = new List<User>();
 var socket = TcpServer.New();
 
-await socket.HandleString((socket, message) => Handle(socket, message, users), 
+var task = socket.HandleString((socket, message) => Handle(socket, message, users), 
     async socket => await Init(socket, users),
     async socket =>
     {
         var user = GetUser(users, socket);
-        users.Remove(user);
-        await Broadcast($"* {user.Name} has left the room", users.ToArray());
+        await RemoveUser(user, users);
     });
+var stayAlive = Task.Factory.StartNew(async () =>
+{
+    while(true)
+    {
+        foreach (var user in users.ToList())
+        {
+            if (!user.Socket.IsConnected())
+            {
+                await RemoveUser(user, users);
+            }
+        }
+    }
+});
+
+Task RemoveUser(User user, List<User> users)
+{
+    users.Remove(user);
+    return Broadcast($"* {user.Name} has left the room", users.ToArray());
+}
 
 Task Init(Socket socket, List<User> users)
 {

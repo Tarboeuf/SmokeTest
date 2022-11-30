@@ -31,7 +31,6 @@ namespace Common
             await Task.WhenAll(tasks);
         }
 
-
         public static async Task HandleFixedSize<T>(this Socket socket, int size, Func<Socket, byte[], T, Task<bool>> func)
             where T : new()
         {
@@ -161,6 +160,15 @@ namespace Common
                     await socket.SendAsync(data, SocketFlags.None);
                 }
             }
+        }
+
+        public static bool IsConnected(this Socket socket)
+        {
+            try
+            {
+                return !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
+            }
+            catch (SocketException) { return false; }
         }
     }
 }
