@@ -53,7 +53,7 @@ static async Task<bool> HandleUserName(Socket socket, string message, List<User>
     }
     user.Name = message;
 
-    var otherUsers = users.Where(u => u.Socket != socket).ToArray();
+    var otherUsers = users.Where(u => u.Socket != socket && !string.IsNullOrEmpty(u.Name)).ToArray();
     await Broadcast($"* The room contains: {string.Join(", ", otherUsers.Select(u => u.Name))}", user);
     await Broadcast($"* {user.Name} has entered the room", otherUsers);
     return false;
