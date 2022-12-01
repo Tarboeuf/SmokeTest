@@ -105,6 +105,7 @@ namespace Common
                         if (received > 0)
                         {
                             shouldClose = await func(connection, buffer, received);
+                            continue;
                         }
                     }
                     catch (Exception ex)

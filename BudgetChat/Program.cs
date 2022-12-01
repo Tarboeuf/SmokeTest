@@ -69,7 +69,6 @@ internal class Program
                 return false;
             }
             string completeMessage = $"[{user.Name}] {message}";
-            Console.WriteLine(completeMessage);
             await Broadcast(completeMessage, users.Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name).ToArray());
             return true;
         }
@@ -100,7 +99,7 @@ internal class Program
         async Task Broadcast(string message, params User[] users)
         {
             Console.WriteLine($"--> {message} ({string.Join(", ", users.Select(u => u.Name))})");
-            await users.Select(u => u.Socket).Where(s => s.Connected).SendAsString(message);
+            await users.Select(u => u.Socket).Where(s => s.IsConnected()).SendAsString(message);
         }
     }
 }
