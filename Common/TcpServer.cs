@@ -129,14 +129,14 @@ namespace Common
             Action<Socket>? initilisation = null,
             Action<Socket>? finalisation = null)
         {
-            return socket.HandleRaw((socket, buffer, received) => func(socket, Encoding.UTF8.GetString(buffer, 0, received)), initilisation, finalisation);
+            return socket.HandleRaw((socket, buffer, received) => func(socket, Encoding.ASCII.GetString(buffer, 0, received)), initilisation, finalisation);
         }
 
         public static async Task SendAsJson(this Socket socket, object response)
         {
             var value = JsonSerializer.Serialize(response) + "\n";
             Console.WriteLine($"Response : {value}");
-            var data = Encoding.UTF8.GetBytes(value);
+            var data = Encoding.ASCII.GetBytes(value);
 
             await socket.SendAsync(data, SocketFlags.None);
         }
@@ -144,7 +144,7 @@ namespace Common
         public static async Task SendAsString(this Socket socket, string response)
         {
             var value = response + "\n";
-            var data = Encoding.UTF8.GetBytes(value);
+            var data = Encoding.ASCII.GetBytes(value);
 
             await socket.SendAsync(data, SocketFlags.None);
         }
@@ -152,7 +152,7 @@ namespace Common
         public static async Task SendAsString(this IEnumerable<Socket> sockets, string response)
         {
             var value = response + "\n";
-            var data = Encoding.UTF8.GetBytes(value);
+            var data = Encoding.ASCII.GetBytes(value);
             foreach (var socket in sockets)
             {
                 if(socket.Connected)
