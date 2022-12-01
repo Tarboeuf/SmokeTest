@@ -19,13 +19,13 @@ internal class Program
                 await RemoveUser(user, users);
             });
 
-        var stayAlive = Task.Factory.StartNew(async () =>
-        {
-            while (true)
-            {
-                await StayAlive(users);
-            }
-        });
+        //var stayAlive = Task.Factory.StartNew(async () =>
+        //{
+        //    while (true)
+        //    {
+        //        await StayAlive(users);
+        //    }
+        //});
         await task;
 
 
