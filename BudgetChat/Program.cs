@@ -18,89 +18,95 @@ internal class Program
                 var user = GetUser(users, socket);
                 await RemoveUser(user, users);
             });
-
-        //var stayAlive = Task.Factory.StartNew(async () =>
-        //{
-        //    while (true)
-        //    {
-        //        await StayAlive(users);
-        //    }
-        //});
+        var keyHandler = KeyHandler(users);
         await task;
+    }
 
-
-        async Task StayAlive(List<User> users)
+    static Task KeyHandler(List<User> users)
+    {
+        return Task.Factory.StartNew(() =>
         {
-            foreach (var user in users.ToList())
+            while (true)
             {
-                if (!user?.Socket.IsConnected() ?? false && !string.IsNullOrEmpty(user.Name))
+                var key = Console.ReadKey();
+                if(key.Key == ConsoleKey.Escape)
                 {
-                    await RemoveUser(user, users);
+                    lock(_lockObject)
+                    {
+                        foreach (var user in users)
+                        {
+                            Console.WriteLine($"* Close > '{user.Name}'");
+                            user.Socket.Close();
+                        }
+                        users.Clear();
+                    }
+
+                    Console.WriteLine("Users cleared");
                 }
             }
-        }
+        });
+    }
 
-        Task RemoveUser(User user, List<User> users)
+    static Task RemoveUser(User user, List<User> users)
+    {
+        lock (_lockObject)
         {
-            lock (_lockObject)
+            users.Remove(user);
+        }
+        return Broadcast($"* {user.Name} has left the room", users.ToArray());
+    }
+
+    static Task Init(Socket socket, List<User> users)
+    {
+        users.Add(new User(socket));
+        return socket.SendAsString("--> Welcome to budgetchat! What shall I call you?");
+    }
+
+    static async Task<bool> Handle(Socket socket, string message, List<User> users)
+    {
+        message = message.Trim('\n');
+        var user = GetUser(users, socket);
+        Console.WriteLine($"<-- {message} ({user.Name})");
+        if (string.IsNullOrEmpty(user.Name))
+        {
+            if (await HandleUserName(socket, message, users, user))
             {
-                users.Remove(user);
-                return Broadcast($"* {user.Name} has left the room", users.ToArray());
-            }
-        }
-
-        Task Init(Socket socket, List<User> users)
-        {
-            users.Add(new User(socket));
-            return socket.SendAsString("--> Welcome to budgetchat! What shall I call you?");
-        }
-
-        async Task<bool> Handle(Socket socket, string message, List<User> users)
-        {
-            message = message.Trim('\n');
-            var user = GetUser(users, socket);
-            Console.WriteLine($"<-- : {message} ({user.Name})");
-            if (string.IsNullOrEmpty(user.Name))
-            {
-                if (await HandleUserName(socket, message, users, user))
-                {
-                    return true;
-                }
-                return false;
-            }
-            string completeMessage = $"[{user.Name}] {message}";
-            await Broadcast(completeMessage, users.Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name).ToArray());
-            return true;
-        }
-
-        User GetUser(List<User> users, Socket socket)
-        {
-            lock (_lockObject)
-            {
-                return users.First(u => u.Socket == socket);
-            }
-        }
-
-        async Task<bool> HandleUserName(Socket socket, string message, List<User> users, User user)
-        {
-            if (message.Length < 1 || message.Length > 16 || users.Any(u => u.Name == message))
-            {
-                await socket.SendAsString("User name is illegal, care to the prison");
                 return true;
             }
-            user.Name = message;
-
-            var otherUsers = users.Where(u => u.Socket != socket && !string.IsNullOrEmpty(u.Name)).ToArray();
-            await Broadcast($"* {user.Name} has entered the room", otherUsers);
-            await Broadcast($"* The room contains: {string.Join(", ", otherUsers.Select(u => u.Name))}", user);
             return false;
         }
+        string completeMessage = $"[{user.Name}] {message}";
+        await Broadcast(completeMessage, users.Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name).ToArray());
+        return true;
+    }
 
-        async Task Broadcast(string message, params User[] users)
+    static User GetUser(List<User> users, Socket socket)
+    {
+        lock (_lockObject)
         {
-            Console.WriteLine($"--> {message} ({string.Join(", ", users.Select(u => u.Name))})");
-            await users.Select(u => u.Socket).Where(s => s.IsConnected()).SendAsString(message);
+            return users.First(u => u.Socket == socket);
         }
+    }
+
+    static async Task<bool> HandleUserName(Socket socket, string message, List<User> users, User user)
+    {
+        if (message.Length < 1 || message.Length > 16 || users.Any(u => u.Name == message))
+        {
+            await socket.SendAsString("User name is illegal, care to the prison");
+            return true;
+        }
+        user.Name = message;
+
+        var otherUsers = users.Where(u => u.Socket != socket && !string.IsNullOrEmpty(u.Name)).ToArray();
+        await Broadcast($"* {user.Name} has entered the room", otherUsers);
+        await Broadcast($"* The room contains: {string.Join(", ", otherUsers.Select(u => u.Name))}", user);
+        return false;
+    }
+
+    static async Task Broadcast(string message, params User[] users)
+    {
+        Console.WriteLine($"--> {message} ({string.Join(", ", users.Where(u => !string.IsNullOrEmpty(u.Name)).Select(u => u.Name))})");
+        await users.Where(u => !string.IsNullOrEmpty(u.Name)).Select(u => u.Socket).Where(s => s.IsConnected()).SendAsString(message);
     }
 }
 
