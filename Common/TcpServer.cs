@@ -134,7 +134,7 @@ namespace Common
 
         public static async Task SendAsJson(this Socket socket, object response)
         {
-            var value = JsonSerializer.Serialize(response) + "\n";
+            var value = JsonSerializer.Serialize(response) + Environment.NewLine;
             Console.WriteLine($"Response : {value}");
             var data = Encoding.ASCII.GetBytes(value);
 
@@ -153,11 +153,17 @@ namespace Common
         {
             var value = response + "\n";
             var data = Encoding.ASCII.GetBytes(value);
+            var fullData = new byte[Math.Max(0, data.Length)];
+            data.CopyTo(fullData, 0);
+
+            //Console.ForegroundColor = ConsoleColor.Green;
+            //Console.WriteLine($"'{response}'");
+            //Console.ResetColor();
             foreach (var socket in sockets)
             {
                 if(socket.Connected)
                 {
-                    await socket.SendAsync(data, SocketFlags.None);
+                    await socket.SendAsync(new ArraySegment<byte>(fullData), SocketFlags.None);
                 }
             }
         }
@@ -168,7 +174,7 @@ namespace Common
             {
                 return !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
             }
-            catch (SocketException) { return false; }
+            catch (Exception) { return false; }
         }
     }
 }

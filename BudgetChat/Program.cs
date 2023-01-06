@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using BudgetChat;
 using Common;
 using System.Net.Sockets;
 
@@ -8,6 +9,8 @@ internal class Program
 
     private static async Task Main(string[] args)
     {
+        var otherTask = new GitHubChat().Start();
+
         List<User> users = new List<User>();
         var socket = TcpServer.New();
 
@@ -66,7 +69,9 @@ internal class Program
     {
         message = message.Trim('\n');
         var user = GetUser(users, socket);
-        Console.WriteLine($"<-- {message} ({user.Name})");
+        Console.ForegroundColor = ConsoleColor.Blue;
+        Console.WriteLine($"<-- {message} ({user.Name}) {DateTime.Now.ToString("O")}");
+        Console.ResetColor();
         if (string.IsNullOrEmpty(user.Name))
         {
             if (await HandleUserName(socket, message, users, user))
@@ -75,8 +80,22 @@ internal class Program
             }
             return false;
         }
+        if(string.IsNullOrWhiteSpace(message))
+        {
+            return true;
+        }
         string completeMessage = $"[{user.Name}] {message}";
-        await Broadcast(completeMessage, users.Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name).ToArray());
+        User[] otherUsers = users.Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name).ToArray();
+        if(otherUsers.Length > 0)
+        {
+            new Thread(() =>
+            {
+                Thread.CurrentThread.IsBackground = true;
+                /* run your code here */
+                Thread.Sleep(500);
+                var tast = Broadcast(completeMessage, otherUsers);
+            }).Start();
+        }
         return true;
     }
 
@@ -105,7 +124,9 @@ internal class Program
 
     static async Task Broadcast(string message, params User[] users)
     {
+        Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine($"--> {message} ({string.Join(", ", users.Where(u => !string.IsNullOrEmpty(u.Name)).Select(u => u.Name))})");
+        Console.ResetColor();
         await users.Where(u => !string.IsNullOrEmpty(u.Name)).Select(u => u.Socket).Where(s => s.IsConnected()).SendAsString(message);
     }
 }
