@@ -88,6 +88,7 @@ namespace Common
                 initialisation?.Invoke(connection);
 
                 Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
+                connection.HeartBeat(finalisation);
                 byte[] buffer = new byte[1024 * 1024];
                 int received;
                 do
@@ -105,13 +106,18 @@ namespace Common
                         if (received > 0)
                         {
                             shouldClose = await func(connection, buffer, received);
+                            if(shouldClose)
+                            {
+                                break;
+                            }
                             continue;
                         }
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex);
-                        return;
+                        shouldClose = true;
+                        break; ;
                     }
                 } while (received > 0);
 
@@ -122,6 +128,23 @@ namespace Common
                     connection.Close();
                 }
             }
+        }
+
+        private static void HeartBeat(this Socket socket,
+            Action<Socket>? finalisation)
+        {
+            Task.Factory.StartNew(() =>
+            {
+                while (true)
+                {
+                    if(!socket.IsConnected())
+                    {
+                        finalisation?.Invoke(socket);
+                        return;
+                    }
+                    Thread.Sleep(100);
+                }
+            });
         }
 
         public static Task HandleString(this Socket socket,

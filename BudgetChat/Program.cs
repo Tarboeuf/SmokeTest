@@ -19,7 +19,10 @@ internal class Program
             async socket =>
             {
                 var user = GetUser(users, socket);
-                await RemoveUser(user, users);
+                if (user != null)
+                {
+                    await RemoveUser(user, users);
+                }
             });
         var keyHandler = KeyHandler(users);
         await task;
@@ -56,7 +59,11 @@ internal class Program
         {
             users.Remove(user);
         }
-        return Broadcast($"* {user.Name} has left the room", users.ToArray());
+        if(!string.IsNullOrEmpty(user.Name))
+        {
+            return Broadcast($"* {user.Name} has left the room", users.ToArray());
+        }
+        return Task.CompletedTask;
     }
 
     static Task Init(Socket socket, List<User> users)
@@ -67,8 +74,18 @@ internal class Program
 
     static async Task<bool> Handle(Socket socket, string message, List<User> users)
     {
-        message = message.Trim('\n');
         var user = GetUser(users, socket);
+        if(user == null)
+        {
+            return false;
+        }
+        if(!message.EndsWith('\n'))
+        {
+            user.OnGoingMessage += message;
+            return false;
+        }
+        message = (user.OnGoingMessage + message).Trim('\n');
+        user.OnGoingMessage = null;
         Console.ForegroundColor = ConsoleColor.Blue;
         Console.WriteLine($"<-- {message} ({user.Name}) {DateTime.Now.ToString("O")}");
         Console.ResetColor();
@@ -82,7 +99,7 @@ internal class Program
         }
         if(string.IsNullOrWhiteSpace(message))
         {
-            return true;
+            return false;
         }
         string completeMessage = $"[{user.Name}] {message}";
         User[] otherUsers = users.Where(u => !string.IsNullOrEmpty(u.Name) && u.Name != user.Name).ToArray();
@@ -91,29 +108,34 @@ internal class Program
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
-                /* run your code here */
-                Thread.Sleep(500);
                 var tast = Broadcast(completeMessage, otherUsers);
             }).Start();
         }
-        return true;
+        return false;
     }
 
-    static User GetUser(List<User> users, Socket socket)
+    static User? GetUser(List<User> users, Socket socket)
     {
         lock (_lockObject)
         {
-            return users.First(u => u.Socket == socket);
+            return users.FirstOrDefault(u => u.Socket == socket);
         }
     }
 
     static async Task<bool> HandleUserName(Socket socket, string message, List<User> users, User user)
     {
-        if (message.Length < 1 || message.Length > 16 || users.Any(u => u.Name == message))
+        if (message.Length < 1 || message.Length > 16)
         {
             await socket.SendAsString("User name is illegal, care to the prison");
             return true;
         }
+        var previousUser = users.FirstOrDefault(u => u.Name == message);
+        if(previousUser != null)
+        {
+            users.Remove(previousUser);
+            previousUser.Socket.Close();
+        }
+
         user.Name = message;
 
         var otherUsers = users.Where(u => u.Socket != socket && !string.IsNullOrEmpty(u.Name)).ToArray();
@@ -125,7 +147,7 @@ internal class Program
     static async Task Broadcast(string message, params User[] users)
     {
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"--> {message} ({string.Join(", ", users.Where(u => !string.IsNullOrEmpty(u.Name)).Select(u => u.Name))})");
+        Console.WriteLine($"--> {message} ({string.Join(", ", users.Where(u => !string.IsNullOrEmpty(u?.Name)).Select(u => u.Name))})");
         Console.ResetColor();
         await users.Where(u => !string.IsNullOrEmpty(u.Name)).Select(u => u.Socket).Where(s => s.IsConnected()).SendAsString(message);
     }
@@ -135,10 +157,9 @@ public class User
 {
     public Socket Socket { get; init; }
 
-    public User(Socket socket)
-    {
-        Socket = socket;
-    }
+    public User(Socket socket) => Socket = socket;
+
+    public string? OnGoingMessage { get; set; }
 
     public string? Name { get; set; }
 }
