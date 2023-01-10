@@ -259,13 +259,13 @@ namespace Common
             }
             catch (Exception ex)
             {
-                //Console.ForegroundColor = ConsoleColor.White;
-                //Console.WriteLine(ex.ToString());
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine(ex.ToString());
                 return null;
             }
             finally 
             {
-                Client.Close();
+                //Client.Close();
             }
         }
     }

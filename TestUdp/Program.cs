@@ -4,9 +4,9 @@ using System.Net;
 using System.Text;
 
 Console.WriteLine("Hello, World!");
-var server = new UdpClient("185.219.142.220", 10001);
-IPEndPoint ep = new IPEndPoint(IPAddress.Any, 5170); // endpoint where server is listening
-//client.Connect(ep);
+var server = new UdpClient();
+IPEndPoint ep = new IPEndPoint(IPAddress.Parse("185.219.142.220"), 10001); // endpoint where server is listening
+server.Connect(ep);
 
 // send data
 string message = "version";
