@@ -9,7 +9,7 @@ namespace Common
     {
         public static Socket NewTcp()
         {
-            int port = 5169;
+            int port = 10001;
 
             var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.ReuseAddress, true);
@@ -226,7 +226,7 @@ namespace Common
     {
         public UdpListener()
         {
-            Client = new UdpClient(5169, AddressFamily.InterNetworkV6);
+            Client = new UdpClient(10001);
         }
 
         public Task Reply(string message, IPEndPoint endpoint)
