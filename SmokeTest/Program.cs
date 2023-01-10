@@ -3,7 +3,7 @@ using System.Net.Sockets;
 
 Console.WriteLine("Starting echo server...");
 
-await TcpServer.New()
+await CommonServer.NewTcp()
     .HandleRaw(async (socket, buffer, received) =>
     {
         await socket.SendAsync(new ArraySegment<byte>(buffer, 0, received), SocketFlags.None);

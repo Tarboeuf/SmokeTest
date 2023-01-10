@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 Console.WriteLine("Starting prime server");
-await TcpServer.New()
+await CommonServer.NewTcp()
     .HandleString(Handle);
 
 async Task<bool> Handle(Socket socket, string data)

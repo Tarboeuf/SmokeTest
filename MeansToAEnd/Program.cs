@@ -3,7 +3,7 @@ using Common;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
-await TcpServer.New()
+await CommonServer.NewTcp()
     .HandleFixedSize<Dictionary<int, int>>(9, Handle);
 
 async Task<bool> Handle(Socket socket, byte[] buffer, Dictionary<int, int> dataBase)

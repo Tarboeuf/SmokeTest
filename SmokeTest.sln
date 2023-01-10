@@ -3,17 +3,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.32804.182
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmokeTest", "SmokeTest\SmokeTest.csproj", "{57C8FB99-3BC7-459F-A00C-47D8B3B556F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmokeTest", "SmokeTest\SmokeTest.csproj", "{57C8FB99-3BC7-459F-A00C-47D8B3B556F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimeTime", "PrimeTime\PrimeTime.csproj", "{BA101377-507C-41B8-9881-C07DB47ACF90}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PrimeTime", "PrimeTime\PrimeTime.csproj", "{BA101377-507C-41B8-9881-C07DB47ACF90}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{B7D6BC72-D50E-4E5D-A112-BE3B3420B7B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{B7D6BC72-D50E-4E5D-A112-BE3B3420B7B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{751930CC-C95B-4FE1-B3A0-E0BD466350E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{751930CC-C95B-4FE1-B3A0-E0BD466350E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeansToAEnd", "MeansToAEnd\MeansToAEnd.csproj", "{DC005626-45F2-4087-928D-E97FDE2FB14B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeansToAEnd", "MeansToAEnd\MeansToAEnd.csproj", "{DC005626-45F2-4087-928D-E97FDE2FB14B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BudgetChat", "BudgetChat\BudgetChat.csproj", "{1C002244-4E01-49FD-8E45-F4C3EF890C6C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BudgetChat", "BudgetChat\BudgetChat.csproj", "{1C002244-4E01-49FD-8E45-F4C3EF890C6C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnusualDatabaseProgram", "UnusualDatabaseProgram\UnusualDatabaseProgram.csproj", "{2827EA06-F7E3-4820-89E3-38E3940ADB8C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUdp", "TestUdp\TestUdp.csproj", "{993C7EAC-1C87-4322-A23C-ADB9F3138FB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +49,14 @@ Global
 		{1C002244-4E01-49FD-8E45-F4C3EF890C6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C002244-4E01-49FD-8E45-F4C3EF890C6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C002244-4E01-49FD-8E45-F4C3EF890C6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2827EA06-F7E3-4820-89E3-38E3940ADB8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2827EA06-F7E3-4820-89E3-38E3940ADB8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2827EA06-F7E3-4820-89E3-38E3940ADB8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2827EA06-F7E3-4820-89E3-38E3940ADB8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{993C7EAC-1C87-4322-A23C-ADB9F3138FB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{993C7EAC-1C87-4322-A23C-ADB9F3138FB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{993C7EAC-1C87-4322-A23C-ADB9F3138FB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{993C7EAC-1C87-4322-A23C-ADB9F3138FB8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

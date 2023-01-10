@@ -12,7 +12,7 @@ internal class Program
         var otherTask = new GitHubChat().Start();
 
         List<User> users = new List<User>();
-        var socket = TcpServer.New();
+        var socket = CommonServer.NewTcp();
 
         var task = socket.HandleString((socket, message) => Handle(socket, message, users),
             async socket => await Init(socket, users),

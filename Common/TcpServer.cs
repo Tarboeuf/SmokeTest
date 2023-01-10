@@ -5,19 +5,39 @@ using System.Text.Json;
 
 namespace Common
 {
-    public static class TcpServer
+    public static class CommonServer
     {
-        public static Socket New()
+        public static Socket NewTcp()
         {
             int port = 5169;
 
             var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+            socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.ReuseAddress, true);
             socket.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
             socket.Listen();
             Console.WriteLine($"Listening on {socket.LocalEndPoint}");
             return socket;
         }
+
+        public static UdpListener NewUdp()
+        {
+            return new UdpListener();
+        }
+
+        public static async Task HandleString(this UdpListener server, 
+            Func<UdpListener, Received, Task<bool>> func)
+        {
+            while (true)
+            {
+                var received = await server.Receive();
+                if(received == null)
+                {
+                    continue;
+                }
+                await func(server, received.Value);
+            }
+        }
+
 
         public static async Task HandleRaw(this Socket socket, Func<Socket, byte[], int, Task<bool>> func, Action<Socket>? initilisation = null,
             Action<Socket>? finalisation = null)
@@ -199,5 +219,59 @@ namespace Common
             }
             catch (Exception) { return false; }
         }
+    }
+
+    //Server
+    public class UdpListener : UdpBase
+    {
+        public UdpListener()
+        {
+            Client = new UdpClient(5169, AddressFamily.InterNetworkV6);
+        }
+
+        public Task Reply(string message, IPEndPoint endpoint)
+        {
+            var datagram = Encoding.ASCII.GetBytes(message);
+            return Client.SendAsync(datagram, datagram.Length, endpoint);
+        }
+
+    }
+
+    public abstract class UdpBase
+    {
+        protected UdpClient Client;
+
+        protected UdpBase()
+        {
+            Client = new UdpClient();
+        }
+
+        public async Task<Received?> Receive()
+        {
+            try
+            {
+                var result = await Client.ReceiveAsync();
+                return new Received()
+                {
+                    Message = Encoding.ASCII.GetString(result.Buffer, 0, result.Buffer.Length),
+                    Sender = result.RemoteEndPoint,
+                };
+            }
+            catch (Exception ex)
+            {
+                //Console.ForegroundColor = ConsoleColor.White;
+                //Console.WriteLine(ex.ToString());
+                return null;
+            }
+            finally 
+            {
+                Client.Close();
+            }
+        }
+    }
+    public struct Received
+    {
+        public IPEndPoint Sender;
+        public string Message;
     }
 }
