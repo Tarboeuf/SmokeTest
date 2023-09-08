@@ -7,16 +7,17 @@ namespace Common
 {
     public static class CommonServer
     {
-        public static Socket NewTcp()
+        public static TcpListener NewTcp()
         {
             int port = 10001;
-
-            var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-            socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.ReuseAddress, true);
-            socket.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
-            socket.Listen();
-            Console.WriteLine($"Listening on {socket.LocalEndPoint}");
-            return socket;
+            var listener = TcpListener.Create(port);
+            listener.Start();
+            //var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+            //socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.ReuseAddress, true);
+            //socket.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
+            //socket.Listen();
+            Console.WriteLine($"Listening on {listener.LocalEndpoint}");
+            return listener;
         }
 
         public static UdpListener NewUdp()
@@ -39,11 +40,11 @@ namespace Common
         }
 
 
-        public static async Task HandleRaw(this Socket socket, Func<Socket, byte[], int, Task<bool>> func, Action<Socket>? initilisation = null,
-            Action<Socket>? finalisation = null)
+        public static async Task HandleRaw(this TcpListener socket, Func<TcpClient, byte[], int, Task<bool>> func, Action<TcpClient>? initilisation = null,
+            Action<TcpClient>? finalisation = null)
         {
             List<Task> tasks = new List<Task>();
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 150; i++)
             {
                 tasks.Add(InternalHandleRaw(socket, func, tasks, initilisation, finalisation));
             }
@@ -51,7 +52,7 @@ namespace Common
             await Task.WhenAll(tasks);
         }
 
-        public static async Task HandleFixedSize<T>(this Socket socket, int size, Func<Socket, byte[], T, Task<bool>> func)
+        public static async Task HandleFixedSize<T>(this TcpListener socket, int size, Func<Socket, byte[], T, Task<bool>> func)
             where T : new()
         {
             List<Task> tasks = new List<Task>();
@@ -63,12 +64,12 @@ namespace Common
             await Task.WhenAll(tasks);
         }
 
-        private static async Task InternalFixedSizeHandleRaw<T>(Socket socket, int size, Func<Socket, byte[], T, Task<bool>> func, List<Task> tasks)
+        private static async Task InternalFixedSizeHandleRaw<T>(TcpListener socket, int size, Func<Socket, byte[], T, Task<bool>> func, List<Task> tasks)
             where T : new()
         {
             while (true)
             {
-                var connection = await socket.AcceptAsync();
+                var connection = await socket.AcceptSocketAsync();
                 Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
 
                 T context = new();
@@ -95,19 +96,19 @@ namespace Common
             }
         }
 
-        private static async Task InternalHandleRaw(Socket socket,
-            Func<Socket, byte[], int, Task<bool>> func, 
+        private static async Task InternalHandleRaw(TcpListener socket,
+            Func<TcpClient, byte[], int, Task<bool>> func, 
             List<Task> tasks, 
-            Action<Socket>? initialisation,
-            Action<Socket>? finalisation)
+            Action<TcpClient>? initialisation,
+            Action<TcpClient>? finalisation)
         {
             while (true)
             {
                 bool shouldClose = false;
-                var connection = await socket.AcceptAsync();
+                var connection = await socket.AcceptTcpClientAsync();
                 initialisation?.Invoke(connection);
 
-                Console.WriteLine($"Connection accepted from {connection.RemoteEndPoint}");
+                Console.WriteLine($"Connection accepted from {connection.Client.RemoteEndPoint}");
                 connection.HeartBeat(finalisation);
                 byte[] buffer = new byte[1024 * 1024];
                 int received;
@@ -119,10 +120,10 @@ namespace Common
                         {
                             Console.WriteLine($"Connection closed");
                             tasks.Add(InternalHandleRaw(socket, func, tasks, initialisation, finalisation));
-                            finalisation?.Invoke(socket);
+                            finalisation?.Invoke(connection);
                             return;
                         }
-                        received = await connection.ReceiveAsync(buffer, SocketFlags.None);
+                        received = await connection.Client.ReceiveAsync(buffer, SocketFlags.None);
                         if (received > 0)
                         {
                             shouldClose = await func(connection, buffer, received);
@@ -130,7 +131,6 @@ namespace Common
                             {
                                 break;
                             }
-                            continue;
                         }
                     }
                     catch (Exception ex)
@@ -143,15 +143,15 @@ namespace Common
 
                 if (shouldClose)
                 {
-                    Console.WriteLine($"Connection closed to {connection.RemoteEndPoint}");
+                    Console.WriteLine($"Connection closed to {connection.Client.RemoteEndPoint}");
                     finalisation?.Invoke(connection);
                     connection.Close();
                 }
             }
         }
 
-        private static void HeartBeat(this Socket socket,
-            Action<Socket>? finalisation)
+        private static void HeartBeat(this TcpClient socket,
+            Action<TcpClient>? finalisation)
         {
             Task.Factory.StartNew(() =>
             {
@@ -167,32 +167,32 @@ namespace Common
             });
         }
 
-        public static Task HandleString(this Socket socket,
-            Func<Socket, string, Task<bool>> func,
-            Action<Socket>? initilisation = null,
-            Action<Socket>? finalisation = null)
+        public static Task HandleString(this TcpListener socket,
+            Func<TcpClient, string, Task<bool>> func,
+            Action<TcpClient>? initilisation = null,
+            Action<TcpClient>? finalisation = null)
         {
             return socket.HandleRaw((socket, buffer, received) => func(socket, Encoding.ASCII.GetString(buffer, 0, received)), initilisation, finalisation);
         }
 
-        public static async Task SendAsJson(this Socket socket, object response)
+        public static async Task SendAsJson(this TcpClient socket, object response)
         {
             var value = JsonSerializer.Serialize(response) + Environment.NewLine;
             Console.WriteLine($"Response : {value}");
             var data = Encoding.ASCII.GetBytes(value);
 
-            await socket.SendAsync(data, SocketFlags.None);
+            await socket.Client.SendAsync(data, SocketFlags.None);
         }
 
-        public static async Task SendAsString(this Socket socket, string response)
+        public static async Task SendAsString(this TcpClient socket, string response)
         {
             var value = response + "\n";
             var data = Encoding.ASCII.GetBytes(value);
 
-            await socket.SendAsync(data, SocketFlags.None);
+            await socket.Client.SendAsync(data, SocketFlags.None);
         }
 
-        public static async Task SendAsString(this IEnumerable<Socket> sockets, string response)
+        public static async Task SendAsString(this IEnumerable<TcpClient> sockets, string response)
         {
             var value = response + "\n";
             var data = Encoding.ASCII.GetBytes(value);
@@ -206,16 +206,16 @@ namespace Common
             {
                 if(socket.Connected)
                 {
-                    await socket.SendAsync(new ArraySegment<byte>(fullData), SocketFlags.None);
+                    await socket.Client.SendAsync(new ArraySegment<byte>(fullData), SocketFlags.None);
                 }
             }
         }
 
-        public static bool IsConnected(this Socket socket)
+        public static bool IsConnected(this TcpClient socket)
         {
             try
             {
-                return !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
+                return !(socket.Client.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
             }
             catch (Exception) { return false; }
         }

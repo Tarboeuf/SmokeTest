@@ -1,11 +1,21 @@
+using System.Diagnostics;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using Xunit.Abstractions;
 
 namespace IntegrationTests
 {
     public class PrimeTimeFixture
     {
+        private readonly ITestOutputHelper _testOutputHelper;
+
+        public PrimeTimeFixture(ITestOutputHelper testOutputHelper)
+        {
+            _testOutputHelper = testOutputHelper;
+        }
+
         [Fact]
         public void PrimeTimeRequestOk()
         {
@@ -61,6 +71,39 @@ Host: localhost
 
             Assert.Equal("isPrime", response!.Method);
             Assert.False(response.Prime);
+        }
+
+        [Fact]
+        public async Task TestStreamSendBeforeClosing()
+        {
+            using MemoryStream ms = new MemoryStream();
+            using StreamReader sr = new StreamReader(ms);
+            
+            using StreamWriter sw = new StreamWriter(ms);
+            bool isClose = false;
+            new Thread(() =>
+            {
+                while (!isClose)
+                {
+                    var line = sr.ReadLine();
+                    if (line == null)
+                    {
+                        ms.Seek(0, SeekOrigin.Begin);
+                        continue;
+                    }
+
+                    Assert.Equal("Ok", line);
+                    ms.Flush();
+                    _testOutputHelper.WriteLine(line);
+                }
+            }).Start();
+            await sw.WriteLineAsync("Ok");
+            await sw.FlushAsync();
+            await sw.WriteLineAsync("nok");
+            await sw.FlushAsync();
+            await Task.Delay(1000);
+            isClose = true;
+            sw.Close();
         }
 
         void Write(NetworkStream stream, Request request)

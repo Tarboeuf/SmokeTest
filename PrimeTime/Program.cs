@@ -7,7 +7,7 @@ Console.WriteLine("Starting prime server");
 await CommonServer.NewTcp()
     .HandleString(Handle);
 
-async Task<bool> Handle(Socket socket, string data)
+async Task<bool> Handle(TcpClient socket, string data)
 {
     Console.WriteLine($"Request : {data}");
     bool result = false;
@@ -18,7 +18,7 @@ async Task<bool> Handle(Socket socket, string data)
     return result;
 }
 
-async Task<bool> HandleSingleRequest(Socket socket, string data)
+async Task<bool> HandleSingleRequest(TcpClient socket, string data)
 {
     try
     {
@@ -74,7 +74,7 @@ static bool IsPrime(double number)
     return true;
 }
 
-static async Task Stop(Socket socket)
+static async Task Stop(TcpClient socket)
 {
     await socket.SendAsJson(new Response());
 }

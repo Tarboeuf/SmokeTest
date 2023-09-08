@@ -66,13 +66,13 @@ internal class Program
         return Task.CompletedTask;
     }
 
-    static Task Init(Socket socket, List<User> users)
+    static Task Init(TcpClient socket, List<User> users)
     {
         users.Add(new User(socket));
         return socket.SendAsString("--> Welcome to budgetchat! What shall I call you?");
     }
 
-    static async Task<bool> Handle(Socket socket, string message, List<User> users)
+    static async Task<bool> Handle(TcpClient socket, string message, List<User> users)
     {
         var user = GetUser(users, socket);
         if(user == null)
@@ -114,7 +114,7 @@ internal class Program
         return false;
     }
 
-    static User? GetUser(List<User> users, Socket socket)
+    static User? GetUser(List<User> users, TcpClient socket)
     {
         lock (_lockObject)
         {
@@ -122,7 +122,7 @@ internal class Program
         }
     }
 
-    static async Task<bool> HandleUserName(Socket socket, string message, List<User> users, User user)
+    static async Task<bool> HandleUserName(TcpClient socket, string message, List<User> users, User user)
     {
         if (message.Length < 1 || message.Length > 16)
         {
@@ -155,9 +155,9 @@ internal class Program
 
 public class User
 {
-    public Socket Socket { get; init; }
+    public TcpClient Socket { get; init; }
 
-    public User(Socket socket) => Socket = socket;
+    public User(TcpClient socket) => Socket = socket;
 
     public string? OnGoingMessage { get; set; }
 
