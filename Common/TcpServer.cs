@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Net.Http;
 
 namespace Common
 {
@@ -192,6 +193,11 @@ namespace Common
             await socket.Client.SendAsync(data, SocketFlags.None);
         }
 
+        public static void Log(this TcpClient tcpClient, string message)
+        {
+            //Console.WriteLine($"{tcpClient.Client.RemoteEndPoint} : {message}");
+        }
+
         public static async Task SendAsString(this IEnumerable<TcpClient> sockets, string response)
         {
             var value = response + "\n";
@@ -218,6 +224,37 @@ namespace Common
                 return !(socket.Client.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
             }
             catch (Exception) { return false; }
+        }
+
+        public static long ReadLong(this BinaryReader reader)
+        {
+            var bytes = reader.ReadBytes(8).Reverse().ToArray();
+            return BitConverter.ToInt64(bytes, 0);
+        }
+        public static ushort ReadUShort(this BinaryReader reader)
+        {
+            var bytes = reader.ReadBytes(2).Reverse().ToArray();
+            return BitConverter.ToUInt16(bytes, 0);
+        }
+        public static int ReadInt(this BinaryReader reader)
+        {
+            var bytes = reader.ReadBytes(4).Reverse().ToArray();
+            return BitConverter.ToInt32(bytes, 0);
+        }
+        public static uint ReadUInt(this BinaryReader reader)
+        {
+            var bytes = reader.ReadBytes(4).Reverse().ToArray();
+            return BitConverter.ToUInt32(bytes, 0);
+        }
+
+        public static IEnumerable<DateTime> EachDaysTo(this DateTime start, DateTime end)
+        {
+            int diffDays = (end.Date - start.Date).Days;
+            yield return start.Date;
+            for (int i = 0; i < diffDays; i++)
+            {
+                yield return start.Date.AddDays(i + 1);
+            }
         }
     }
 

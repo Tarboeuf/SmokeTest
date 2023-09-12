@@ -1,88 +1,207 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Collections.Concurrent;
 using System.Net.Sockets;
-using System.Reactive;
-using System.Runtime.InteropServices;
 using System.Text;
 using Common;
 
 Console.WriteLine("Starting Speed Daemon...");
-List<(IAmDispatcher, TcpClient)> dispatchers = new List<(IAmDispatcher, TcpClient)>();
-Dictionary<string, Dictionary<int, List<(Plate, IAmCamera)>>> plates =
-    new Dictionary<string, Dictionary<int, List<(Plate, IAmCamera)>>>();
-Dictionary<TcpClient, IAmCamera> cameras = new Dictionary<TcpClient, IAmCamera>();
-await CommonServer.NewTcp()
-    .HandleRaw((socket, buffer, received) =>
+var dispatchers = new List<(IAmDispatcher, BinaryWriter)>();
+var plates = new ConcurrentDictionary<string, ConcurrentDictionary<int, List<(Plate, IAmCamera)>>>();
+var cameras = new ConcurrentDictionary<BinaryWriter, IAmCamera>();
+var pendingTickets = new List<Ticket>();
+
+var sentTickets = new ConcurrentDictionary<string, List<DateTime>>();
+
+var port = 10001;
+var listener = TcpListener.Create(port);
+listener.Start();
+
+while (true)
+{
+    try
     {
-        var span = new Span<byte>(buffer, 1, received - 1);
-        span.Reverse();
-        switch (buffer[0])
+        var client = await listener.AcceptTcpClientAsync();
+        _ = Task.Run(() => HandleConnection(client));
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine(e.Message);
+    }
+}
+
+async Task HandleConnection(TcpClient tcpClient)
+{
+    await using var networkStream = tcpClient.GetStream();
+    using var reader = new BinaryReader(networkStream);
+    await using var writer = new BinaryWriter(networkStream);
+    var isStopped = false;
+    while (!isStopped)
+    {
+        if (!networkStream.DataAvailable)
+        {
+            await Task.Delay(200);
+            continue;
+        }
+        var type = reader.ReadByte();
+        switch (type)
         {
             case 0x20:
-                var plate = Deserialize<Plate>(span);
-                if (!plates.ContainsKey(plate.PlateNumber))
-                {
-                    plates.Add(plate.PlateNumber, new Dictionary<int, List<(Plate, IAmCamera)>>());
-                }
+                var plate = Deserialize<Plate>(reader);
+                plates.TryAdd(plate.PlateNumber, new ConcurrentDictionary<int, List<(Plate, IAmCamera)>>());
                 var platesByRoad = plates[plate.PlateNumber];
-                var road = cameras[socket].Road;
-                if (!platesByRoad.ContainsKey(road))
+                lock (dispatchers)
                 {
-                    platesByRoad.Add(road, new List<(Plate, IAmCamera)>());
+                    if (dispatchers.Any(d => d.Item2 == writer))
+                    {
+                        Serialize(new Error {Message = "plate from dispatche mf"}, 0x10, writer);
+                        isStopped = true;
+                        break;
+                    }
                 }
+
+                var road = cameras[writer].Road;
+                platesByRoad.TryAdd(road, new List<(Plate, IAmCamera)>());
                 var platesOfRoad = platesByRoad[road];
-                platesOfRoad.Add((plate, cameras[socket]));
+                List<(Plate, IAmCamera)> clone;
+                lock (platesOfRoad)
+                {
+                    clone = platesOfRoad.ToList();
+                    tcpClient.Log($"New plate added {plate.PlateNumber}");
+                    platesOfRoad.Add((plate, cameras[writer]));
+                }
+                CheckAndSendTickets(clone, plate, cameras[writer], () => isStopped = true);
+
                 break;
             case 0x40:
-                var whb = Deserialize<WantHeartbeat>(span);
-                Console.WriteLine($"Receive Heartbeat from {socket.Client.RemoteEndPoint} : Interval={whb.Interval}");
+                var whb = Deserialize<WantHeartbeat>(reader);
+                tcpClient.Log($"Receive Heartbeat : Interval={whb.Interval}");
                 if (whb.Interval == 0)
                     break;
                 var thread = new Thread(start: () =>
                 {
-                    using var stream = socket.GetStream();
-                    var delay = TimeSpan.FromSeconds(whb.Interval / 10);
+                    var delay = TimeSpan.FromSeconds((double)whb.Interval / 10);
                     while (true)
                     {
                         try
                         {
-                            stream.WriteByte(0x41);
-                            Console.WriteLine($"Send Heartbeat to {socket.Client.RemoteEndPoint}");
+                            lock (writer)
+                            {
+                                writer.Write((byte)0x41);
+                            }
                             Thread.Sleep(delay);
                         }
-                        catch (Exception )
+                        catch (Exception)
                         {
-                            //Ignore
+                            isStopped = true;
+                            break;
                         }
                     }
                 });
                 thread.Start();
                 break;
             case 0x80:
-                var camera = Deserialize<IAmCamera>(span);
+                try
+                {
+                    var camera = Deserialize<IAmCamera>(reader);
+                    lock (dispatchers)
+                    {
+                        if (dispatchers.Any(d => d.Item2 == writer))
+                        {
+                            Serialize(new Error {Message = "camera not dispatcher mf"}, 0x10, writer);
+                            isStopped = true;
+                            break;
+                        }
+                    }
 
-                cameras.Add(socket, camera);
+                    if (!cameras.TryAdd(writer, camera))
+                    {
+
+                        Serialize(new Error { Message = "marcelo" }, 0x10, writer);
+                        isStopped = true;
+                        break;
+                    }
+                    tcpClient.Log(camera.ToString());
+                }
+                catch (Exception e)
+                {
+                    Serialize(new Error { Message = "marcel" }, 0x10, writer);
+                    isStopped = true;
+                }
                 break;
             case 0x81:
-                var iAmDispatcher = Deserialize<IAmDispatcher>(span);
-                dispatchers.Add((iAmDispatcher, socket));
+                var iAmDispatcher = Deserialize<IAmDispatcher>(reader);
+                if (cameras.ContainsKey(writer))
+                {
+                    Serialize(new Error { Message = "dispatcher no camera mf" }, 0x10, writer);
+                    isStopped = true;
+                    break;
+                }
+
+                lock (dispatchers)
+                {
+                    if (dispatchers.Any(d => d.Item2 == writer))
+                    {
+                        Serialize(new Error {Message = "marcela"}, 0x10, writer);
+                        isStopped = true;
+                        break;
+                    }
+                }
+
+                lock (dispatchers)
+                {
+                    dispatchers.Add((iAmDispatcher, writer));
+                }
+
+                tcpClient.Log(iAmDispatcher.ToString());
+                foreach (var pendingTicket in pendingTickets.ToList())
+                {
+                    if (iAmDispatcher.Roads.Contains(pendingTicket.Road))
+                    {
+                        Send(writer, pendingTicket, () => isStopped = true);
+                        pendingTickets.Remove(pendingTicket);
+                    }
+                }
+                break;
+            default:
+                Console.WriteLine(type);
+                Serialize(new Error { Message = "bad " + type }, 0x10, writer);
+                isStopped = true;
                 break;
         }
+    }
 
-        return Task.FromResult(false);
-    });
+    lock (dispatchers)
+    {
+        dispatchers.RemoveAll(p => p.Item2 == writer);
+    }
 
-void CheckAndSendTickets(List<(Plate, IAmCamera)> plates, Plate newPlate, IAmCamera camera)
+    cameras.TryRemove(writer, out var _);
+
+    tcpClient.Log("Stopped");
+    tcpClient.Dispose();
+
+}
+
+
+void CheckAndSendTickets(List<(Plate, IAmCamera)> platesByRoad, Plate newPlate, IAmCamera camera, Func<bool> stopOnCrash)
 {
-    foreach (var plate in plates)
+    foreach (var plate in platesByRoad)
     {
         var distance = Math.Abs(plate.Item2.Mile - camera.Mile);
-        var speed = distance / Math.Abs((plate.Item1.Timestamp - newPlate.Timestamp).Hours);
-        if (speed > camera.SpeedLimit)
+        var time = plate.Item1.Timestamp > newPlate.Timestamp
+            ? plate.Item1.Timestamp - newPlate.Timestamp
+            : newPlate.Timestamp - plate.Item1.Timestamp;
+        var speed = distance / time.TotalHours;
+        if ((speed) > camera.SpeedLimit + 0.5)
         {
             var firstPlate = plate.Item1.Timestamp > newPlate.Timestamp ? (newPlate, camera) : plate;
             var endPlate = plate.Item1.Timestamp < newPlate.Timestamp ? (newPlate, camera) : plate;
-            Ticket ticket = new Ticket
+            if (plate.Item2.Road != camera.Road)
+            {
+                throw new Exception("Why ?");
+            }
+            var ticket = new Ticket
             {
                 Road = camera.Road,
                 PlateNumber = newPlate.PlateNumber,
@@ -90,76 +209,109 @@ void CheckAndSendTickets(List<(Plate, IAmCamera)> plates, Plate newPlate, IAmCam
                 End = endPlate.Item1.Timestamp,
                 MileEnd = endPlate.Item2.Mile,
                 MileStart = firstPlate.Item2.Mile,
-                PlateNumberLength = newPlate.PlateNumberLength,
-                Speed = speed * 100
+                Speed = (ushort)(speed * 100)
             };
-            var dispatcher = dispatchers.FirstOrDefault(d => d.Item1.Roads.Contains(camera.Road));
+            (IAmDispatcher, BinaryWriter) dispatcher;
+            lock (dispatchers)
+            {
+                dispatcher = dispatchers.ToArray().FirstOrDefault(d => d.Item1.Roads.Contains(camera.Road));
+            }
             if (dispatcher != (null, null))
             {
-                Send(dispatcher.Item2, ticket);
+                Send(dispatcher.Item2, ticket, stopOnCrash);
             }
             else
             {
-
+                pendingTickets.Add(ticket);
             }
         }
     }
 }
 
-void Send(TcpClient client, Ticket ticket)
+void Send(BinaryWriter writer, Ticket ticket, Func<bool> stopOnCrash)
 {
-    var data = Serialize(ticket, 0x21, 18 + ticket.PlateNumberLength);
-    client.Client.Send(data);
+    try
+    {
+        lock (sentTickets)
+        {
+            if (sentTickets.TryGetValue(ticket.PlateNumber, out var sentTicket))
+            {
+                foreach (var date in ticket.Start.EachDaysTo(ticket.End))
+                {
+                    if (sentTicket.Contains(date))
+                        return;
+                }
+            }
+            else
+            {
+                sentTickets.TryAdd(ticket.PlateNumber, new List<DateTime>());
+            }
+
+            foreach (var date in ticket.Start.EachDaysTo(ticket.End))
+            {
+                sentTickets[ticket.PlateNumber].Add(date);
+            }
+        }
+
+        //Console.WriteLine($"Ticket sending ... {ticket}");
+        Serialize(ticket, 0x21, writer);
+    }
+    catch (Exception e)
+    {
+        stopOnCrash();
+    }
 }
 
-static T Deserialize<T>(Span<byte> binaryData) where T : new()
+static T Deserialize<T>(BinaryReader reader) where T : new()
 {
     var result = new T();
 
-    using var stream = new MemoryStream(binaryData.ToArray());
-    using var reader = new BinaryReader(stream);
-
     var fields = typeof(T).GetProperties();
 
-    var lastByte = byte.MinValue;
     foreach (var field in fields)
     {
         if (field.PropertyType == typeof(byte))
         {
             var value = reader.ReadByte();
             field.SetValue(result, value);
-            lastByte = value;
         }
         else if (field.PropertyType == typeof(string))
         {
-            var chars = reader.ReadBytes(lastByte);
+            var size = reader.ReadByte();
+            var chars = reader.ReadBytes(size);
             var value = Encoding.ASCII.GetString(chars);
             field.SetValue(result, value);
         }
         else if (field.PropertyType == typeof(DateTime))
         {
-            var ticks = reader.ReadInt64();
+            var ticks = reader.ReadUInt();
             var dateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(ticks);
             var dateTime = dateTimeOffset.UtcDateTime;
             field.SetValue(result, dateTime);
         }
+        else if (field.PropertyType == typeof(ushort))
+        {
+            var value = reader.ReadUShort();
+            field.SetValue(result, value);
+        }
         else if (field.PropertyType == typeof(int))
         {
-            int value = reader.ReadInt16();
+            var value = reader.ReadInt();
             field.SetValue(result, value);
         }
         else if (field.PropertyType == typeof(long))
         {
-            int value = reader.ReadInt32();
+            var value = reader.ReadLong();
             field.SetValue(result, value);
         }
-        else if (field.PropertyType == typeof(int[]))
+        else if (field.PropertyType == typeof(ushort[]))
         {
-            int[] values = new int[lastByte];
+            var size = reader.ReadByte();
+            var values = new ushort[size];
 
-            for (int i = 0; i < lastByte; i++)
+            for (var i = 0; i < size; i++)
             {
-                values[i] = reader.ReadInt32();
+                values[i] = reader.ReadUShort();
             }
             field.SetValue(result, values);
         }
@@ -168,96 +320,86 @@ static T Deserialize<T>(Span<byte> binaryData) where T : new()
     return result;
 }
 
-static byte[] Serialize<T>(T obj, byte code, int size) where T : new()
+static void Serialize<T>(T obj, byte code, BinaryWriter writer) where T : new()
 {
-    byte[] data = new byte[size];
-    data[0] = code;
-    var fields = typeof(T).GetProperties();
-    int offset = 1;
-    var lastByte = byte.MinValue;
-    foreach (var field in fields)
+    lock (writer)
     {
-        byte[] addedBytes;
-        if (field.PropertyType == typeof(byte))
+        writer.Write(code);
+        var fields = typeof(T).GetProperties();
+        var offset = 1;
+        var lastByte = byte.MinValue;
+        foreach (var field in fields)
         {
-            var value = (byte)field.GetValue(obj);
-            lastByte = value;
+            if (field.PropertyType == typeof(byte))
+            {
+                var value = (byte)field.GetValue(obj);
+                writer.Write(value);
+            }
+            else if (field.PropertyType == typeof(string))
+            {
+                var value = (string)field.GetValue(obj);
+                writer.Write((byte)value.Length);
+                writer.Write(Encoding.ASCII.GetBytes(value));
+            }
+            else if (field.PropertyType == typeof(DateTime))
+            {
+                var value = (DateTime)field.GetValue(obj);
+                var unixTimestamp = (long)(value - new DateTime(1970, 1, 1)).TotalSeconds;
 
-            addedBytes = new byte[] { value };
-        }
-        else if (field.PropertyType == typeof(string))
-        {
-            var value = (string)field.GetValue(obj);
-            addedBytes = Encoding.ASCII.GetBytes(value);
-        }
-        else if (field.PropertyType == typeof(DateTime))
-        {
-            var value = (DateTime)field.GetValue(obj);
-            long unixTimestamp = (long)(value - new DateTime(1970, 1, 1)).TotalSeconds;
+                // Convert the Unix timestamp to an integer (you may need to cast or truncate it)
+                var timestampInteger = (uint)unixTimestamp;
 
-            // Convert the Unix timestamp to an integer (you may need to cast or truncate it)
-            int timestampInteger = (int)unixTimestamp;
+                // Serialize the integer into a 4-byte array
+                writer.Write(BitConverter.GetBytes(timestampInteger).Reverse().ToArray());
 
-            // Serialize the integer into a 4-byte array
-            addedBytes = BitConverter.GetBytes(timestampInteger);
-
+            }
+            else if (field.PropertyType == typeof(int))
+            {
+                var value = (int)field.GetValue(obj);
+                writer.Write(BitConverter.GetBytes(value).Reverse().ToArray());
+            }
+            else if (field.PropertyType == typeof(ushort))
+            {
+                var value = (ushort)field.GetValue(obj);
+                writer.Write(BitConverter.GetBytes(value).Reverse().ToArray());
+            }
+            else
+            {
+                throw new Exception("Type not implemented");
+            }
         }
-        else if (field.PropertyType == typeof(int))
-        {
-            var value = (int)field.GetValue(obj);
-            addedBytes = BitConverter.GetBytes(value);
-        }
-        else if (field.PropertyType == typeof(long))
-        {
-            var value = (long)field.GetValue(obj);
-            addedBytes = BitConverter.GetBytes(value);
-        }
-        else
-        {
-            throw new Exception("Type not implemented");
-        }
-
-        for (int i = 0; i < addedBytes.Length; i++)
-        {
-            data[offset + i] = addedBytes[i];
-        }
-
-        offset += addedBytes.Length;
     }
-
-    return data;
 }
-
-
 
 class Error
 {
-    public byte MessageLength { get; set; }
     public string Message { get; set; }
 }
 
 class Plate
 {
-    public byte PlateNumberLength { get; set; }
     public string PlateNumber { get; set; }
     public DateTime Timestamp { get; set; }
 }
 
 class Ticket
 {
-    public byte PlateNumberLength { get; set; }
     public string PlateNumber { get; set; }
-    public int Road { get; set; }
-    public int MileStart { get; set; }
+    public ushort Road { get; set; }
+    public ushort MileStart { get; set; }
     public DateTime Start { get; set; }
-    public int MileEnd { get; set; }
+    public ushort MileEnd { get; set; }
     public DateTime End { get; set; }
-    public int Speed { get; set; }
+    public ushort Speed { get; set; }
+    public override string ToString()
+    {
+        return $"Ticket Road:{Road} PlateNumber:{PlateNumber} Speed:{Speed}";
+    }
 }
 
 class WantHeartbeat
 {
-    public long Interval { get; set; }
+    public int Interval { get; set; }
 }
 
 class Heartbeat
@@ -266,13 +408,22 @@ class Heartbeat
 
 class IAmCamera
 {
-    public int Road { get; set; }
-    public int Mile { get; set; }
-    public int SpeedLimit { get; set; }
+    public ushort Road { get; set; }
+    public ushort Mile { get; set; }
+    public ushort SpeedLimit { get; set; }
+
+    public override string ToString()
+    {
+        return $"Camera Road:{Road} Mile:{Mile} SpeedLimit:{SpeedLimit}";
+    }
 }
 
 class IAmDispatcher
 {
-    public byte NumRoads { get; set; }
-    public int[] Roads { get; set; }
+    public ushort[] Roads { get; set; }
+
+    public override string ToString()
+    {
+        return $"Dispatcher Roads:{string.Join(",", Roads)}";
+    }
 }
