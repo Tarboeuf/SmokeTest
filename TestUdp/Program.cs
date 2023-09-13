@@ -4,26 +4,26 @@ using System.Net;
 using System.Text;
 
 Console.WriteLine("Hello, World!");
-var server = new UdpClient();
-IPEndPoint ep = new IPEndPoint(IPAddress.Parse("185.219.142.220"), 10001); // endpoint where server is listening
+var server = new UdpClient(AddressFamily.InterNetworkV6);
+IPEndPoint ep = new IPEndPoint(IPAddress.Parse("2a02:8429:6051:cf01:e03:eee7:6b5c:cdb5"), 10001); // endpoint where server is listening
 server.Connect(ep);
 
 // send data
-string message = "version";
+string message = "/connect/646510383/";
 var bytes = Encoding.ASCII.GetBytes(message);
 server.Send(bytes, bytes.Length);
 
-// then receive data
-var receivedData = server.Receive(ref ep);
+//// then receive data
+//var receivedData = server.Receive(ref ep);
 
-Console.WriteLine($"receive data ({Encoding.ASCII.GetString(receivedData)}) from " + ep.ToString());
+//Console.WriteLine($"receive data ({Encoding.ASCII.GetString(receivedData)}) from " + ep.ToString());
 
 
 Task.Factory.StartNew(() =>
 {
     while (true)
     {
-        receivedData = server.Receive(ref ep);
+        var receivedData = server.Receive(ref ep);
 
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine(Encoding.ASCII.GetString(receivedData));

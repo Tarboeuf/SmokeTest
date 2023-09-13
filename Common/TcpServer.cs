@@ -1,8 +1,11 @@
-﻿using System.Net.Sockets;
+﻿using System.Drawing;
+using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Net.Http;
+
+using Console = Colorful.Console;
 
 namespace Common
 {
@@ -13,10 +16,6 @@ namespace Common
             int port = 10001;
             var listener = TcpListener.Create(port);
             listener.Start();
-            //var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-            //socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.ReuseAddress, true);
-            //socket.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
-            //socket.Listen();
             Console.WriteLine($"Listening on {listener.LocalEndpoint}");
             return listener;
         }
@@ -266,10 +265,21 @@ namespace Common
             Client = new UdpClient(10001);
         }
 
-        public Task Reply(string message, IPEndPoint endpoint)
+        public async Task Reply(string message, IPEndPoint endpoint)
         {
+            Console.Write($">> ", Color.DarkGray);
+            Console.Write(message.Trim('\n').Trim('\r'));
+            Console.WriteLine($" {endpoint}", Color.Gray);
             var datagram = Encoding.ASCII.GetBytes(message);
-            return Client.SendAsync(datagram, datagram.Length, endpoint);
+            await Client.SendAsync(datagram, datagram.Length, endpoint);
+        }
+        public async Task Reply2(string message, IPEndPoint endpoint)
+        {
+            Console.Write($">> ", Color.DarkGray);
+            Console.Write(message.Trim('\n').Trim('\r'));
+            Console.WriteLine($" {endpoint}", Color.Gray);
+            var datagram = Encoding.ASCII.GetBytes(message);
+            await Client.SendAsync(datagram, datagram.Length, endpoint);
         }
 
     }
@@ -296,8 +306,7 @@ namespace Common
             }
             catch (Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(ex.ToString(), Color.White);
                 return null;
             }
             finally 
