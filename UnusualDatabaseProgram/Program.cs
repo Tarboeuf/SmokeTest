@@ -7,7 +7,7 @@ using System.Reflection.Metadata;
 
 internal class Program
 {
-    static Dictionary<string, string> MyDatabase = new Dictionary<string, string>();
+    static Dictionary<string, string> MyDatabase = new();
 
     private static async Task Main(string[] args)
     {

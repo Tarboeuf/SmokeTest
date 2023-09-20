@@ -1,15 +1,15 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System.Drawing;
-using Common;
-using Colorful;
-using Console = Colorful.Console;
 using System.Net;
-using System.Net.Sockets;
+using Common;
+using Console = Colorful.Console;
 
-internal class Program
+namespace LineReversal;
+
+public class Program
 {
-    static Dictionary<int, Session> sessions = new Dictionary<int, Session>();
+    static readonly Dictionary<int, Session> _sessions = new();
 
     private static async Task Main(string[] args)
     {
@@ -18,7 +18,7 @@ internal class Program
         await CommonServer.NewUdp().HandleString(HandleString);
 
     }
-    async static Task<bool> HandleString(UdpListener listener, Received data)
+    static async Task<bool> HandleString(UdpListener listener, Received data)
     {
         Console.Write($"<< ", Color.DarkGray);
         Console.Write(data.Message, Color.GreenYellow);
@@ -32,89 +32,113 @@ internal class Program
         {
             return true;
         }
+        
+        return await ProcessKind(new Replier(listener, data.Sender), data.Message);
+    }
 
-        int client = int.Parse(parts[2]);
+    public static async Task<bool> ProcessKind(IReplier listener, string dataMessage)
+    {
+        if (dataMessage.FirstOrDefault() != '/')
+        {
+            return true;
+        }
+        var parts = dataMessage.Split('/');
+        if (parts.Length < 2)
+        {
+            return true;
+        }
 
-        switch (parts[1])
+        var client = int.Parse(parts[2]);
+        var kind = parts[1];
+        switch (kind)
         {
             case "connect":
                 await Send($"/ack/{client}/0/");
-                if (!sessions.ContainsKey(client))
-                {
-                    sessions.Add(client, new Session(client));
-                }
+                _sessions.TryAdd(client, new Session());
+
                 break;
             case "data":
-                int messagePosition = int.Parse(parts[3]);
-                if (!sessions.ContainsKey(client))
+                var messagePosition = int.Parse(parts[3]);
+                if (!_sessions.ContainsKey(client))
                 {
-                    await Close(client);
+                    await Close();
                     break;
                 }
-                var session = sessions[client];
-                if (session.Messages.ContainsKey(messagePosition))
+
+                var session = _sessions[client];
+                if (session.Messages.TryGetValue(messagePosition, out var sessionMessage))
                 {
-                    await Send($"/ack/{client}/{GetUnescapedLengthMessage(session.Messages[messagePosition])}/");
+                    await Send($"/ack/{client}/{GetUnescapedLengthMessage(sessionMessage)}/");
                     break;
                 }
-                string message = parts[4];
+
+                var message = parts[4];
                 session.Messages.Add(messagePosition, message);
-                await Send($"/ack/{client}/{GetUnescapedLengthMessage(message)}/");
+                await Send($"/ack/{client}/{GetUnescapedLengthMessage(message) + messagePosition}/");
                 session.OnGoingLine += message;
                 await SendLines(session, messagePosition);
                 break;
             case "ack":
-                int length = int.Parse(parts[3]);
-                if (!sessions.ContainsKey(client))
+                var length = int.Parse(parts[3]);
+                if (!_sessions.ContainsKey(client))
                 {
-                    await Close(client);
+                    await Close();
                     break;
                 }
-                if (length >= sessions[client].Messages.Select(m => GetUnescapedLengthMessage(m.Value)).Max())
+
+                if (length >= _sessions[client].Messages.Select(m => GetUnescapedLengthMessage(m.Value)).Max())
                 {
                     break;
                 }
-                int totalPayloadSent = sessions[client].Messages.Select(m => GetUnescapedLengthMessage(m.Value)).Sum();
+
+                var totalPayloadSent = _sessions[client].Messages.Select(m => GetUnescapedLengthMessage(m.Value)).Sum();
                 if (length > totalPayloadSent)
                 {
-                    await Close(client);
+                    await Close();
                     break;
                 }
+
                 if (length < totalPayloadSent)
                 {
-                    if (!sessions.ContainsKey(client))
+                    if (!_sessions.ContainsKey(client))
                     {
-                        await Close(client);
+                        await Close();
                         break;
                     }
-                    await ReSendLines(sessions[client], length);
-                    break;
+
+                    await ReSendLines(_sessions[client], length);
                 }
+
                 break;
             case "close":
-                await Close(client);
+                await Close();
                 break;
         }
+
         return false;
-        async Task Close(int client)
+
+        async Task Close()
         {
             await Send($"/close/{client}/");
-            sessions.Remove(client);
+            _sessions.Remove(client);
         }
+
         async Task Send(string message)
         {
-            await listener.Reply2(message, data.Sender);
+            await listener.Reply2(message);
         }
-        async Task SendLines(Session session, int messagePosition, bool newSending = true)
+
+        async Task SendLines(Session session, int messagePosition)
         {
-            var values = session.OnGoingLine.Split(new []{'\n'}, StringSplitOptions.RemoveEmptyEntries);
-            bool finishWithNewLine = session.OnGoingLine.Last() == '\n';
-            string message = "";
-            foreach (string line in values[..^1])
+            var values = session.OnGoingLine.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
+            var finishWithNewLine = session.OnGoingLine.Last() == '\n';
+            var message = "";
+            foreach (var line in values[..^1])
             {
                 message += GetMessage(line);
             }
-            if(finishWithNewLine)
+
+            if (finishWithNewLine)
             {
                 message += GetMessage(values.Last());
                 session.OnGoingLine = "";
@@ -123,16 +147,18 @@ internal class Program
             {
                 session.OnGoingLine = values.Last();
             }
-            if(message.Length >= 0)
+
+            if (message.Length > 0)
             {
                 await Send($"/data/{client}/{messagePosition}/{message}/");
             }
         }
+
         async Task ReSendLines(Session session, int messagePosition)
         {
             var values = string.Concat(session.Messages.Values);
             session.OnGoingLine = values[messagePosition..];
-            await SendLines(session, messagePosition, false);
+            await SendLines(session, messagePosition);
         }
     }
 
@@ -150,18 +176,31 @@ internal class Program
     }
 }
 
-class Session
+public interface IReplier
 {
-    public int Client { get; set; }
+    Task Reply2(string message);
+}
 
-    public Session(int client)
+public class Replier : IReplier
+{
+    private readonly UdpListener _listener;
+    private readonly IPEndPoint _ipEndPoint;
+
+    public Replier(UdpListener listener, IPEndPoint ipEndPoint)
     {
-        Client = client;
+        _listener = listener;
+        _ipEndPoint = ipEndPoint;
     }
 
-    public Dictionary<int, string> Messages { get; } = new Dictionary<int, string>();
+    public async Task Reply2(string message)
+    {
+        await _listener.Reply2(message, _ipEndPoint);
+    }
+}
+
+class Session
+{
+    public Dictionary<int, string> Messages { get; } = new();
 
     public string OnGoingLine = "";
-
-    public string SentData = "";
 }

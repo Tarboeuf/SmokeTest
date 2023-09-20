@@ -25,7 +25,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestTcp", "TestTcp\TestTcp.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpeedDaemon", "SpeedDaemon\SpeedDaemon.csproj", "{05D60A57-09D5-4F3B-AD75-90C83442A49B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LineReversal", "LineReversal\LineReversal.csproj", "{623B9F68-F58B-4976-A113-24247161C94D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LineReversal", "LineReversal\LineReversal.csproj", "{623B9F68-F58B-4976-A113-24247161C94D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LineReversal.Tests", "LineReversal.Tests\LineReversal.Tests.csproj", "{6AEFE4EA-DF8F-4F03-8A0B-F3CEB76F07CD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,6 +83,10 @@ Global
 		{623B9F68-F58B-4976-A113-24247161C94D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{623B9F68-F58B-4976-A113-24247161C94D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{623B9F68-F58B-4976-A113-24247161C94D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6AEFE4EA-DF8F-4F03-8A0B-F3CEB76F07CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AEFE4EA-DF8F-4F03-8A0B-F3CEB76F07CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AEFE4EA-DF8F-4F03-8A0B-F3CEB76F07CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AEFE4EA-DF8F-4F03-8A0B-F3CEB76F07CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
