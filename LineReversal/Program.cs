@@ -125,7 +125,7 @@ public class Program
 
         async Task Send(string message)
         {
-            await listener.Reply2(message);
+            await listener.Reply(message);
         }
 
         async Task SendLines(Session session, int messagePosition)
@@ -150,7 +150,7 @@ public class Program
 
             if (message.Length > 0)
             {
-                await Send($"/data/{client}/{messagePosition}/{message}/");
+                await Send($"/data/{client}/{session.Messages.Values.Sum(v => v.Length) - session.OnGoingLine.Length - message.Length}/{message}/");
             }
         }
 
@@ -158,7 +158,7 @@ public class Program
         {
             var values = string.Concat(session.Messages.Values);
             session.OnGoingLine = values[messagePosition..];
-            await SendLines(session, messagePosition);
+            await SendLines(session, session.Messages.Values.Sum(v => v.Length) - messagePosition - session.OnGoingLine.Length);
         }
     }
 
@@ -178,7 +178,7 @@ public class Program
 
 public interface IReplier
 {
-    Task Reply2(string message);
+    Task Reply(string message);
 }
 
 public class Replier : IReplier
@@ -192,7 +192,7 @@ public class Replier : IReplier
         _ipEndPoint = ipEndPoint;
     }
 
-    public async Task Reply2(string message)
+    public async Task Reply(string message)
     {
         await _listener.Reply2(message, _ipEndPoint);
     }
