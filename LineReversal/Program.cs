@@ -68,7 +68,7 @@ public class Program
                 var session = _sessions[client];
                 if (session.Messages.TryGetValue(messagePosition, out var sessionMessage))
                 {
-                    await Send($"/ack/{client}/{GetUnescapedLengthMessage(sessionMessage) + messagePosition}/");
+                    await Send($"/ack/{client}/{GetUnescapedLengthMessage(sessionMessage)}/");
                     break;
                 }
 
@@ -76,7 +76,7 @@ public class Program
                 session.Messages.Add(messagePosition, message);
                 await Send($"/ack/{client}/{GetUnescapedLengthMessage(message) + messagePosition}/");
                 session.OnGoingLine += message;
-                await SendLines(session);
+                await SendLines(session, messagePosition);
                 break;
             case "ack":
                 var length = int.Parse(parts[3]);
@@ -128,29 +128,20 @@ public class Program
             await listener.Reply(message);
         }
 
-        async Task SendLines(Session session)
+        async Task SendLines(Session session, int messagePosition)
         {
             var values = session.OnGoingLine.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
             var finishWithNewLine = session.OnGoingLine.Last() == '\n';
-            var message = "";
-            foreach (var line in values[..^1])
+            
+            foreach (var line in values)
             {
-                message += GetMessage(line);
+                session.OnGoingLine += GetMessage(line);
             }
-
+            
             if (finishWithNewLine)
             {
-                message += GetMessage(values.Last());
+                await Send($"/data/{client}/{session.Messages.Values.Sum(v => v.Length) - session.OnGoingLine.Length}/{session.OnGoingLine}/");
                 session.OnGoingLine = "";
-            }
-            else
-            {
-                session.OnGoingLine = values.Last();
-            }
-
-            if (message.Length > 0)
-            {
-                await Send($"/data/{client}/{session.Messages.Values.Sum(v => v.Length) - session.OnGoingLine.Length - message.Length}/{message}/");
             }
         }
 
@@ -158,7 +149,7 @@ public class Program
         {
             var values = string.Concat(session.Messages.Values);
             session.OnGoingLine = values[messagePosition..];
-            await SendLines(session);
+            await SendLines(session, session.Messages.Values.Sum(v => v.Length) - messagePosition - session.OnGoingLine.Length);
         }
     }
 
