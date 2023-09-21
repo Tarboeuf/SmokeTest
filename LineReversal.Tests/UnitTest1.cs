@@ -98,5 +98,18 @@ namespace LineReversal.Tests
             replier.Verify(r => r.Reply("/ack/468988375/110/"));
             replier.Verify(r => r.Reply("/data/468988375/16/swadkcaj largetni ytrap xnihps tnaig srenosirp ym dia ot ot llebeulb srenosirp lla emoc hcaep\n/"));
         }
+
+        [Fact]
+        public async Task MessageNotCompleteShouldNotBeenSent()
+        {
+            Mock<IReplier> replier = new Mock<IReplier>();
+            await Program.ProcessKind(replier.Object, "/connect/1/");
+            replier.Verify(r => r.Reply("/ack/1/0/"));
+            await Program.ProcessKind(replier.Object, "/data/1/0/A\nB/");
+            replier.Verify(r => r.Reply("/ack/1/3/"));
+            await Program.ProcessKind(replier.Object, "/data/1/3/C\n/");
+            replier.Verify(r => r.Reply("/ack/1/5/"));
+            replier.Verify(r => r.Reply("/data/0/A\nBC\n/"));
+        }
     }
 }

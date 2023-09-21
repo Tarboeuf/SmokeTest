@@ -132,25 +132,16 @@ public class Program
         {
             var values = session.OnGoingLine.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
             var finishWithNewLine = session.OnGoingLine.Last() == '\n';
-            var message = "";
-            foreach (var line in values[..^1])
+            
+            foreach (var line in values)
             {
-                message += GetMessage(line);
+                session.OnGoingLine += GetMessage(line);
             }
-
+            
             if (finishWithNewLine)
             {
-                message += GetMessage(values.Last());
+                await Send($"/data/{client}/{session.Messages.Values.Sum(v => v.Length) - session.OnGoingLine.Length}/{session.OnGoingLine}/");
                 session.OnGoingLine = "";
-            }
-            else
-            {
-                session.OnGoingLine = values.Last();
-            }
-
-            if (message.Length > 0)
-            {
-                await Send($"/data/{client}/{session.Messages.Values.Sum(v => v.Length) - session.OnGoingLine.Length - message.Length}/{message}/");
             }
         }
 
