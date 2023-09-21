@@ -132,14 +132,14 @@ public class Program
         {
             var values = session.OnGoingLine.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
             var finishWithNewLine = session.OnGoingLine.Last() == '\n';
-            
-            foreach (var line in values)
-            {
-                session.OnGoingLine += GetMessage(line);
-            }
-            
             if (finishWithNewLine)
             {
+                session.OnGoingLine = "";
+                foreach (var line in values)
+                {
+                    session.OnGoingLine += GetMessage(line);
+                }
+            
                 await Send($"/data/{client}/{session.Messages.Values.Sum(v => v.Length) - session.OnGoingLine.Length}/{session.OnGoingLine}/");
                 session.OnGoingLine = "";
             }

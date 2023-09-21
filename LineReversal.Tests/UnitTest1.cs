@@ -109,7 +109,7 @@ namespace LineReversal.Tests
             replier.Verify(r => r.Reply("/ack/1/3/"));
             await Program.ProcessKind(replier.Object, "/data/1/3/C\n/");
             replier.Verify(r => r.Reply("/ack/1/5/"));
-            replier.Verify(r => r.Reply("/data/0/A\nBC\n/"));
+            replier.Verify(r => r.Reply("/data/1/0/A\nCB\n/"));
         }
     }
 }
