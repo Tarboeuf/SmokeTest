@@ -6,13 +6,6 @@ namespace LineReversal.Tests
     public class LineReversalFixture
     {
         [Fact]
-        public async Task WhenDataIsReceived_DataIsSent()
-        {
-            Mock<IReplier> replier = new Mock<IReplier>();
-            await Program.ProcessKind(replier.Object, "/data/");
-        }
-
-        [Fact]
         public async Task BasicSession()
         {
             Mock<IReplier> replier = new Mock<IReplier>();
@@ -57,17 +50,15 @@ namespace LineReversal.Tests
             Mock<IReplier> replier = new Mock<IReplier>();
             await Program.ProcessKind(replier.Object, "/connect/637914123/");
             await Program.ProcessKind(replier.Object, "/data/637914123/0/aid good giant intrusion casino aid for favicon of now the giant\nPROTOHACKERS of nasa giant prisoners quartz time integral of is quartz is something to party good now\nquartz now gia/");
-            await Program.ProcessKind(replier.Object, "/ack/637914123/167/");
             await Program.ProcessKind(replier.Object, "/data/637914123/181/nt/");
-            await Program.ProcessKind(replier.Object, "/data/637914123/183/ royale integral good nasa the\ntime men prisoners men bluebell the is nasa sphinx love good to aid of the men peach something\ngood hypnotic quartz aid time favicon PROTOHACKERS sphinx love giant bluebell calculator my of fo/");
-            await Program.ProcessKind(replier.Object, "/ack/637914123/167/");
+            await Program.ProcessKind(replier.Object, "/data/637914123/183/ royale integral good nasa the\ntime men prisoners men bluebell the is nasa sphinx love good to aid of the men peach something\ngood hypnotic quartz aid time favicon PROTOHACKERS sphinx love giant bluebell calculator my of fo\n/");
+            await Program.ProcessKind(replier.Object, "/ack/637914123/407/");
 
             replier.Verify(r => r.Reply("/ack/637914123/0/"));
             replier.Verify(r => r.Reply("/ack/637914123/181/"));
-            replier.Verify(r => r.Reply("/data/637914123/0/tnaig eht won fo nocivaf rof dia onisac noisurtni tnaig doog dia\nwon doog ytrap ot gnihtemos si ztrauq si fo largetni emit ztrauq srenosirp tnaig asan fo SREKCAHOTORP\n/"));
             replier.Verify(r => r.Reply("/ack/637914123/183/"));
-            replier.Verify(r => r.Reply("/ack/637914123/406/"));
-            replier.Verify(r => r.Reply("/data/637914123/167/eht asan doog largetni elayor tnaig won ztrauq\ngnihtemos hcaep nem eht fo dia ot doog evol xnihps asan si eht llebeulb nem srenosirp nem emit\n/"), Times.Exactly(2));
+            replier.Verify(r => r.Reply("/ack/637914123/407/"));
+            replier.Verify(r => r.Reply("/data/637914123/0/tnaig eht won fo nocivaf rof dia onisac noisurtni tnaig doog dia\nwon doog ytrap ot gnihtemos si ztrauq si fo largetni emit ztrauq srenosirp tnaig asan fo SREKCAHOTORP\neht asan doog largetni elayor tnaig won ztrauq\ngnihtemos hcaep nem eht fo dia ot doog evol xnihps asan si eht llebeulb nem srenosirp nem emit\nof fo ym rotaluclac llebeulb tnaig evol xnihps SREKCAHOTORP nocivaf emit dia ztrauq citonpyh doog\n/"));
         }
 
         [Fact]
