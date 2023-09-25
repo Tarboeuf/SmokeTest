@@ -48,6 +48,11 @@ public class Program
             return true;
         }
 
+        if (dataMessage.Last() != '/')
+        {
+            return false;
+        }
+
         var client = int.Parse(parts[2]);
         var kind = parts[1];
         switch (kind)

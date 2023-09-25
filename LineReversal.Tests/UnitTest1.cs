@@ -62,32 +62,26 @@ namespace LineReversal.Tests
         }
 
         [Fact]
-        public async Task FailingCase()
+        public async Task ShouldEndWithADash()
         {
-            Mock<IReplier> replier = new Mock<IReplier>(); 
-            await Program.ProcessKind(replier.Object, "/connect/468988375/");
-            replier.Verify(r => r.Reply("/ack/468988375/0/"));
-            await Program.ProcessKind(replier.Object, "/data/468988375/0/quartz/");
-            replier.Verify(r => r.Reply("/ack/468988375/6/"));
-            await Program.ProcessKind(replier.Object, "/data/468988375/0/quartz now go/");
-            replier.Verify(r => r.Reply("/ack/468988375/6/"));
-            await Program.ProcessKind(replier.Object, "/data/468988375/6/ now go/");
-            replier.Verify(r => r.Reply("/ack/468988375/13/"));
-            await Program.ProcessKind(replier.Object, "/data/468988375/13/od\npeach come all prisone/");
-            replier.Verify(r => r.Reply("/ack/468988375/38/"));
-            replier.Verify(r => r.Reply("/data/468988375/0/doog won ztrauq\n/"));
-            await Program.ProcessKind(replier.Object, "/ack/468988375/16/");
-            await Program.ProcessKind(replier.Object, "/data/468988375/13/od\npeach come all prisone/");
-            replier.Verify(r => r.Reply("/ack/468988375/38/"), Times.Exactly(2));
-            await Program.ProcessKind(replier.Object, "/data/468988375/38/rs bluebell to to aid my prisoners giant sph/");
-            replier.Verify(r => r.Reply("/ack/468988375/82/"));
-            await Program.ProcessKind(replier.Object, "/data/468988375/82/inx party integra/");
-            replier.Verify(r => r.Reply("/ack/468988375/99/"));
-            await Program.ProcessKind(replier.Object, "/data/468988375/99/l jackdaws/");
-            replier.Verify(r => r.Reply("/ack/468988375/109/"));
-            await Program.ProcessKind(replier.Object, "/data/468988375/109/\n/");
-            replier.Verify(r => r.Reply("/ack/468988375/110/"));
-            replier.Verify(r => r.Reply("/data/468988375/16/swadkcaj largetni ytrap xnihps tnaig srenosirp ym dia ot ot llebeulb srenosirp lla emoc hcaep\n/"));
+            Mock<IReplier> replier = new Mock<IReplier>();
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/8484885/");
+            replier.Verify(r => r.Reply("/ack/8484885/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/8484885/");
+            replier.Verify(r => r.Reply("/ack/8484885/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/8484885/0/the come my sphinx my the the party tim/");
+            replier.Verify(r => r.Reply("/ack/8484885/39/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/8484885/39/e for integral\nbluebell something intrusion of love royale th/");
+            replier.Verify(r => r.Reply("/ack/8484885/100/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/8484885/100/e all/");
+            replier.Verify(r => r.Reply("/ack/8484885/105/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/8484885/105/\n");
+            await LineReversal.Program.ProcessKind(replier.Object, "/close/8484885/");
+            replier.Verify(r => r.Reply("/close/8484885/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/close/8484885/");
+            replier.Verify(r => r.Reply("/close/8484885/"));
+
+            replier.VerifyAll();
         }
 
         [Fact]
