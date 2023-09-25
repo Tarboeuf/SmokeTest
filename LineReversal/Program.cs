@@ -63,6 +63,10 @@ public class Program
 
                 break;
             case "data":
+                if (parts.Length != 6)
+                {
+                    return false;
+                }
                 var messagePosition = int.Parse(parts[3]);
                 if (!_sessions.ContainsKey(client))
                 {

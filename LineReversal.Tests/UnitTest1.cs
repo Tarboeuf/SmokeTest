@@ -85,6 +85,36 @@ namespace LineReversal.Tests
         }
 
         [Fact]
+        public async Task Fail()
+        {
+            Mock<IReplier> replier = new Mock<IReplier>();
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/1734878917/");
+            replier.Verify(r => r.Reply("/ack/1734878917/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1734878917/0/the for about sphinx is calculator to men peach giant aid hypnotic favicon\nthe casino royale of now party is to peach for the giant now for/");
+            replier.Verify(r => r.Reply("/ack/1734878917/139/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1734878917/139/ co/");
+            replier.Verify(r => r.Reply("/ack/1734878917/142/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1734878917/142/m/");
+            replier.Verify(r => r.Reply("/ack/1734878917/143/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1734878917/143/e/");
+            replier.Verify(r => r.Reply("/ack/1734878917/144/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1734878917/144/\n/");
+            replier.Verify(r => r.Reply("/ack/1734878917/145/"));
+            replier.Verify(r => r.Reply("/data/1734878917/0/nocivaf citonpyh dia tnaig hcaep nem ot rotaluclac si xnihps tuoba rof eht\nemoc rof won tnaig eht rof hcaep ot si ytrap won fo elayor onisac eht\n/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/ack/1734878917/145/");
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1734878917/144/\n/");
+            replier.Verify(r => r.Reply("/ack/1734878917/1/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/close/1734878917/");
+            replier.Verify(r => r.Reply("/close/1734878917/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1734878917/144/\n/");
+            replier.Verify(r => r.Reply("/close/1734878917/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1734878917/144/\n/");
+            replier.Verify(r => r.Reply("/close/1734878917/"));
+
+            replier.VerifyAll();
+        }
+
+        [Fact]
         public async Task MessageNotCompleteShouldNotBeenSent()
         {
             Mock<IReplier> replier = new Mock<IReplier>();
