@@ -88,15 +88,20 @@ public class Program
 
                 var session = _sessions[client];
                 var message = parts[4];
-                if (session.Messages.TryGetValue(messagePosition, out var sessionMessage))
-                {
-                    session.Messages.Remove(messagePosition);
-                }
                 
-                session.Messages.Add(messagePosition, message);
-                await Send($"/ack/{client}/{GetUnescapedLengthMessage(message) + messagePosition}/");
-                session.OnGoingLine += message;
-                await SendLines(session, messagePosition);
+                int finalPosition = message.Length + messagePosition;
+                if (messagePosition > session.Message.Length)
+                {
+                    await Send($"/ack/{client}/{session.Message.Length}/");
+                    break;
+                }
+
+                var cuttedMessage = message[(session.Message.Length - messagePosition)..];
+                session.Message += cuttedMessage;
+                
+                await Send($"/ack/{client}/{finalPosition}/");
+                session.OnGoingLine += cuttedMessage;
+                await SendLines(session);
                 break;
             case "ack":
                 var length = int.Parse(parts[3]);
@@ -106,12 +111,14 @@ public class Program
                     break;
                 }
 
-                if (length >= _sessions[client].Messages.Select(m => GetUnescapedLengthMessage(m.Value)).Max())
+
+
+                if (length >= _sessions[client].MessagesToAck.Select(m => m.Value.Length).Max())
                 {
                     break;
                 }
 
-                var totalPayloadSent = _sessions[client].Messages.Select(m => GetUnescapedLengthMessage(m.Value)).Sum();
+                var totalPayloadSent = _sessions[client].Message.Length;
                 if (length > totalPayloadSent)
                 {
                     await Close();
@@ -149,7 +156,7 @@ public class Program
             await listener.Reply(message);
         }
 
-        async Task SendLines(Session session, int messagePosition)
+        async Task SendLines(Session session)
         {
             var values = session.OnGoingLine.Split(new[] {'\n'}, StringSplitOptions.RemoveEmptyEntries);
             var finishWithNewLine = session.OnGoingLine.Last() == '\n';
@@ -160,17 +167,18 @@ public class Program
                 {
                     session.OnGoingLine += GetMessage(line);
                 }
-            
-                await Send($"/data/{client}/{session.Messages.Values.Sum(v => v.Length) - session.OnGoingLine.Length}/{session.OnGoingLine}/");
+
+                var messagePos = session.Message.Length - session.OnGoingLine.Length;
+                await Send($"/data/{client}/{messagePos}/{session.OnGoingLine}/");
+                session.MessagesToAck.Add(messagePos, session.OnGoingLine);
                 session.OnGoingLine = "";
             }
         }
 
         async Task ReSendLines(Session session, int messagePosition)
         {
-            var values = string.Concat(session.Messages.Values);
-            session.OnGoingLine = values[messagePosition..];
-            await SendLines(session, session.Messages.Values.Sum(v => v.Length) - messagePosition - session.OnGoingLine.Length);
+            session.OnGoingLine = session.Message[messagePosition..];
+            await SendLines(session);
         }
     }
 
@@ -189,11 +197,6 @@ public class Program
     static string GetMessage(string value)
     {
         return string.Concat(value.Reverse()) + "\n";
-    }
-
-    static int GetUnescapedLengthMessage(string message)
-    {
-        return message.Length;
     }
 }
 
@@ -221,7 +224,9 @@ public class Replier : IReplier
 
 class Session
 {
-    public Dictionary<int, string> Messages { get; } = new();
+    public Dictionary<int, string> MessagesToAck { get; } = new();
+
+    public string Message { get; set; } = "";
 
     public string OnGoingLine = "";
 }
