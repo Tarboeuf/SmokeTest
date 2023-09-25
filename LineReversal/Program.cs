@@ -100,8 +100,12 @@ public class Program
                 session.Message += cuttedMessage;
                 
                 await Send($"/ack/{client}/{finalPosition}/");
-                session.OnGoingLine += cuttedMessage;
-                await SendLines(session);
+                if (cuttedMessage.Length > 0)
+                {
+                    session.OnGoingLine += cuttedMessage;
+                    await SendLines(session);
+                }
+
                 break;
             case "ack":
                 var length = int.Parse(parts[3]);
