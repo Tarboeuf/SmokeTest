@@ -115,6 +115,27 @@ namespace LineReversal.Tests
         }
 
         [Fact]
+        public async Task DataIsAppend()
+        {
+            Mock<IReplier> replier = new Mock<IReplier>();
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/1212542098/");
+            replier.Verify(r => r.Reply("/ack/1212542098/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/1212542098/");
+            replier.Verify(r => r.Reply("/ack/1212542098/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1212542098/0/come the come hypnotic party casino peach hypnotic favicon\nprisoners of come sphinx calculator calcu/");
+            replier.Verify(r => r.Reply("/ack/1212542098/100/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1212542098/0/come the come hypnotic party casino peach hypnotic favicon\nprisoners of come sphinx calculator calcu/");
+            replier.Verify(r => r.Reply("/ack/1212542098/100/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1212542098/100/lator is for t/");
+            replier.Verify(r => r.Reply("/ack/1212542098/114/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1212542098/100/lator is for the party nasa all time now /");
+            replier.Verify(r => r.Reply("/ack/1212542098/141/"));
+
+
+            replier.VerifyAll();
+        }
+
+        [Fact]
         public async Task MessageNotCompleteShouldNotBeenSent()
         {
             Mock<IReplier> replier = new Mock<IReplier>();

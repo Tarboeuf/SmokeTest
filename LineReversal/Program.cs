@@ -10,6 +10,7 @@ namespace LineReversal;
 public class Program
 {
     static readonly Dictionary<int, Session> _sessions = new();
+    static bool _shouldWriteInFile = false;
 
     private static async Task Main(string[] args)
     {
@@ -23,6 +24,7 @@ public class Program
             Directory.CreateDirectory("ouput");
         }
 
+        _shouldWriteInFile = true;
         await CommonServer.NewUdp().HandleString(HandleString);
 
     }
@@ -57,10 +59,8 @@ public class Program
         }
 
         var client = int.Parse(parts[2]);
-        using (var sw = File.AppendText(Path.Combine("ouput", $"output\\{client}.txt")))
-        {
-            sw.WriteLine(" await LineReversal.Program.ProcessKind(replier.Object, \"" + dataMessage.Replace("\n", "\\n") + "\");");
-        }
+        
+        WriteInFile($"await LineReversal.Program.ProcessKind(replier.Object, \"{dataMessage.Replace("\n", "\\n")}\");", client);
         if (dataMessage.Last() != '/')
         {
             return false;
@@ -87,13 +87,12 @@ public class Program
                 }
 
                 var session = _sessions[client];
+                var message = parts[4];
                 if (session.Messages.TryGetValue(messagePosition, out var sessionMessage))
                 {
-                    await Send($"/ack/{client}/{GetUnescapedLengthMessage(sessionMessage)}/");
-                    break;
+                    session.Messages.Remove(messagePosition);
                 }
-
-                var message = parts[4];
+                
                 session.Messages.Add(messagePosition, message);
                 await Send($"/ack/{client}/{GetUnescapedLengthMessage(message) + messagePosition}/");
                 session.OnGoingLine += message;
@@ -146,10 +145,7 @@ public class Program
 
         async Task Send(string message)
         {
-            using (var sw = File.AppendText(Path.Combine("ouput", $"{client}.txt")))
-            {
-                sw.WriteLine("replier.Verify(r => r.Reply(\"" + message.Replace("\n", "\\n") + "\"));");
-            }
+            WriteInFile("replier.Verify(r => r.Reply(\"" + message.Replace("\n", "\\n") + "\"));", client);
             await listener.Reply(message);
         }
 
@@ -178,12 +174,21 @@ public class Program
         }
     }
 
+    private static void WriteInFile(string message, int client)
+    {
+        if (!_shouldWriteInFile)
+        {
+            return;
+        }
+
+        using var sw = File.AppendText(Path.Combine("ouput", $"{client}.txt"));
+        sw.WriteLine(message);
+    }
+
 
     static string GetMessage(string value)
     {
         return string.Concat(value.Reverse()) + "\n";
-        // var values = value.Split('\n');
-        // return string.Concat(values.Select(v => v.Length == 0 ? "\n" : string.Concat(v.Reverse())));
     }
 
     static int GetUnescapedLengthMessage(string message)
