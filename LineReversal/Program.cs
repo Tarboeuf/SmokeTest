@@ -18,6 +18,7 @@ public class Program
         if(Directory.Exists("output"))
         {
             Directory.Delete("output", true);
+            Directory.CreateDirectory("ouput");
         }
         else
         {
