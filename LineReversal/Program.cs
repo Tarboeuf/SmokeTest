@@ -14,6 +14,14 @@ public class Program
     private static async Task Main(string[] args)
     {
         Console.WriteAscii("Line Reversal");
+        if(Directory.Exists("output"))
+        {
+            File.Delete("output/*");
+        }
+        else
+        {
+            Directory.CreateDirectory("ouput");
+        }
 
         await CommonServer.NewUdp().HandleString(HandleString);
 
@@ -40,20 +48,24 @@ public class Program
     {
         if (dataMessage.FirstOrDefault() != '/')
         {
-            return true;
+            return false;
         }
         var parts = dataMessage.Split('/');
         if (parts.Length < 2)
-        {
-            return true;
-        }
-
-        if (dataMessage.Last() != '/')
         {
             return false;
         }
 
         var client = int.Parse(parts[2]);
+        using (var sw = File.AppendText(Path.Combine("ouput", $"output\\{client}.txt")))
+        {
+            sw.WriteLine(" await LineReversal.Program.ProcessKind(replier.Object, \"" + dataMessage.Replace("\n", "\\n") + "\");");
+        }
+        if (dataMessage.Last() != '/')
+        {
+            return false;
+        }
+
         var kind = parts[1];
         switch (kind)
         {
@@ -63,7 +75,7 @@ public class Program
 
                 break;
             case "data":
-                if (parts.Length != 6)
+                if(parts.Length != 6) // ""/"data"/"client"/"pos"/"message"/"" 
                 {
                     return false;
                 }
@@ -134,6 +146,10 @@ public class Program
 
         async Task Send(string message)
         {
+            using (var sw = File.AppendText(Path.Combine("ouput", $"{client}.txt")))
+            {
+                sw.WriteLine("replier.Verify(r => r.Reply(\"" + message.Replace("\n", "\\n") + "\"));");
+            }
             await listener.Reply(message);
         }
 
