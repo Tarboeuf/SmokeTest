@@ -145,6 +145,23 @@ namespace LineReversal.Tests
         }
 
         [Fact]
+        public async Task Fail()
+        {
+            Mock<IReplier> replier = new Mock<IReplier>();
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/738559419/");
+            replier.Verify(r => r.Reply("/ack/738559419/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/738559419/0/hello\n/");
+            replier.Verify(r => r.Reply("/ack/738559419/6/"));
+            replier.Verify(r => r.Reply("/data/738559419/0/olleh\n/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/738559419/0/hello\n/");
+            replier.Verify(r => r.Reply("/ack/738559419/6/"));
+
+
+
+            replier.VerifyAll();
+        }
+
+        [Fact]
         public async Task MessageNotCompleteShouldNotBeenSent()
         {
             Mock<IReplier> replier = new Mock<IReplier>();
@@ -156,5 +173,6 @@ namespace LineReversal.Tests
             replier.Verify(r => r.Reply("/ack/1/5/"));
             replier.Verify(r => r.Reply("/data/1/0/A\nCB\n/"));
         }
+        
     }
 }
