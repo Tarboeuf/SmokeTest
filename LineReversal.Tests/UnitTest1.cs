@@ -173,7 +173,7 @@ namespace LineReversal.Tests
 
 
         [Fact]
-        public async Task Fail()
+        public async Task AppendData()
         {
             Mock<IReplier> replier = new Mock<IReplier>();
             await LineReversal.Program.ProcessKind(replier.Object, "/connect/905728477/");
@@ -202,6 +202,40 @@ namespace LineReversal.Tests
             replier.Verify(r => r.Reply("/close/905728477/"));
 
 
+            replier.VerifyAll();
+        }
+
+        [Fact]
+        public async Task Fail()
+        {
+            Mock<IReplier> replier = new Mock<IReplier>();
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/562244571/");
+            replier.Verify(r => r.Reply("/ack/562244571/0/"));
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/0/party my men something aid intrusion love to now favicon to nasa giant\nhypnotic/");
+            replier.Verify(r => r.Reply("/ack/562244571/79/"));
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/79/ aid calculator good of favic/");
+            replier.Verify(r => r.Reply("/ack/562244571/108/"));
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/79/ aid calculator good of favic/");
+            replier.Verify(r => r.Reply("/ack/562244571/108/"));
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/108/on/");
+            replier.Verify(r => r.Reply("/ack/562244571/110/"));
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/110/\n/");
+            replier.Verify(r => r.Reply("/ack/562244571/111/"));
+            replier.Verify(r => r.Reply("/data/562244571/0/tnaig asan ot nocivaf won ot evol noisurtni dia gnihtemos nem ym ytrap\nnocivaf fo doog rotaluclac dia citonpyh\n/"));
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/ack/562244571/111/");
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/close/562244571/");
+            replier.Verify(r => r.Reply("/close/562244571/"));
+
+            await LineReversal.Program.ProcessKind(replier.Object, "/close/562244571/");
+            replier.Verify(r => r.Reply("/close/562244571/"));
 
             replier.VerifyAll();
         }

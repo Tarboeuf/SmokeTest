@@ -2,6 +2,7 @@
 
 using System.Drawing;
 using System.Net;
+using System.Text.RegularExpressions;
 using Common;
 using Console = Colorful.Console;
 
@@ -60,8 +61,9 @@ public class Program
         }
 
         var client = int.Parse(parts[2]);
-        
-        WriteInFile($"await LineReversal.Program.ProcessKind(replier.Object, \"{dataMessage.Replace("\n", "\\n")}\");", client);
+        var message = parts.Length > 4 ? parts[4] : "";
+
+        WriteInFile($"await LineReversal.Program.ProcessKind(replier.Object, \"{Regex.Unescape(dataMessage)}\"); // {message.Length}", client);
         if (dataMessage.Last() != '/')
         {
             return false;
@@ -88,7 +90,6 @@ public class Program
                 }
 
                 var session = _sessions[client];
-                var message = parts[4];
                 
                 int finalPosition = message.Length + messagePosition;
                 if (finalPosition <= session.Message.Length || session.Message.Length < messagePosition)
@@ -156,9 +157,9 @@ public class Program
             _sessions.Remove(client);
         }
 
-        async Task Send(string message)
+        async Task Send(string message, int dataLength = 0)
         {
-            WriteInFile("replier.Verify(r => r.Reply(\"" + message.Replace("\n", "\\n") + "\"));", client);
+            WriteInFile("replier.Verify(r => r.Reply(\"" + Regex.Unescape(message) + $"\")); // {dataLength}", client);
             await listener.Reply(message);
         }
 
@@ -175,7 +176,7 @@ public class Program
                 }
 
                 var messagePos = session.Message.Length - session.OnGoingLine.Length;
-                await Send($"/data/{client}/{messagePos}/{session.OnGoingLine}/");
+                await Send($"/data/{client}/{messagePos}/{session.OnGoingLine}/", session.OnGoingLine.Length);
                 session.MessagesToAck.Add(messagePos, session.OnGoingLine);
                 session.OnGoingLine = "";
             }
