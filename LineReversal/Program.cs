@@ -18,11 +18,11 @@ public class Program
         if(Directory.Exists("output"))
         {
             Directory.Delete("output", true);
-            Directory.CreateDirectory("ouput");
+            Directory.CreateDirectory("output");
         }
         else
         {
-            Directory.CreateDirectory("ouput");
+            Directory.CreateDirectory("output");
         }
 
         _shouldWriteInFile = true;
@@ -195,7 +195,7 @@ public class Program
             return;
         }
 
-        using var sw = File.AppendText(Path.Combine("ouput", $"{client}.txt"));
+        using var sw = File.AppendText(Path.Combine("output", $"{client}.txt"));
         sw.WriteLine(message);
     }
 
