@@ -145,17 +145,27 @@ namespace LineReversal.Tests
         }
 
         [Fact]
-        public async Task Fail()
+        public async Task DataAlreadyReceived()
         {
             Mock<IReplier> replier = new Mock<IReplier>();
-            await LineReversal.Program.ProcessKind(replier.Object, "/connect/738559419/");
-            replier.Verify(r => r.Reply("/ack/738559419/0/"));
-            await LineReversal.Program.ProcessKind(replier.Object, "/data/738559419/0/hello\n/");
-            replier.Verify(r => r.Reply("/ack/738559419/6/"));
-            replier.Verify(r => r.Reply("/data/738559419/0/olleh\n/"));
-            await LineReversal.Program.ProcessKind(replier.Object, "/data/738559419/0/hello\n/");
-            replier.Verify(r => r.Reply("/ack/738559419/6/"));
-
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/1398743517/");
+            replier.Verify(r => r.Reply("/ack/1398743517/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1398743517/0/giant my the\nfor prisoners integral the intrusion to to aid giant prisoners integral to/");
+            replier.Verify(r => r.Reply("/ack/1398743517/87/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1398743517/0/giant my the\nfor prisoners integral the intrusion to to aid giant prisoners integral to to jackdaws about PROTOHACKERS nasa par/");
+            replier.Verify(r => r.Reply("/ack/1398743517/87/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1398743517/87/ty l/");
+            replier.Verify(r => r.Reply("/ack/1398743517/127/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1398743517/127/ov/");
+            replier.Verify(r => r.Reply("/ack/1398743517/129/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1398743517/129/e/");
+            replier.Verify(r => r.Reply("/ack/1398743517/130/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1398743517/130/e\n/");
+            replier.Verify(r => r.Reply("/ack/1398743517/132/"));
+            replier.Verify(r => r.Reply("/data/1398743517/0/eht ym tnaig\neevorap asan SREKCAHOTORP tuoba swadkcaj ot ot largetni srenosirp tnaig dia ot ot noisurtni eht largetni srenosirp rof\n/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/ack/1398743517/135/");
+            await LineReversal.Program.ProcessKind(replier.Object, "/close/1398743517/");
+            replier.Verify(r => r.Reply("/close/1398743517/"));
 
 
             replier.VerifyAll();

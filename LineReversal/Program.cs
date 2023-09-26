@@ -90,16 +90,17 @@ public class Program
                 var message = parts[4];
                 
                 int finalPosition = message.Length + messagePosition;
-                if (messagePosition > session.Message.Length)
+                if (finalPosition <= session.Message.Length)
                 {
                     await Send($"/ack/{client}/{session.Message.Length}/");
                     break;
                 }
+                
+                await Send($"/ack/{client}/{finalPosition}/");
 
                 var cuttedMessage = message[(session.Message.Length - messagePosition)..];
                 session.Message += cuttedMessage;
                 
-                await Send($"/ack/{client}/{finalPosition}/");
                 if (cuttedMessage.Length > 0)
                 {
                     session.OnGoingLine += cuttedMessage;
