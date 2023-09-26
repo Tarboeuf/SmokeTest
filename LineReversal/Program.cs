@@ -17,7 +17,8 @@ public class Program
         Console.WriteAscii("Line Reversal");
         if(Directory.Exists("output"))
         {
-            File.Delete("output/*");
+            Directory.Delete("output", true);
+            Directory.CreateDirectory("ouput");
         }
         else
         {
