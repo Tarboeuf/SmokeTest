@@ -63,7 +63,7 @@ public class Program
         var client = int.Parse(parts[2]);
         var message = parts.Length > 4 ? parts[4] : "";
 
-        WriteInFile($"await LineReversal.Program.ProcessKind(replier.Object, \"{Regex.Unescape(dataMessage)}\"); // {message.Length}", client);
+        WriteInFile($"await LineReversal.Program.ProcessKind(replier.Object, \"{Escape(dataMessage)}\"); // {message.Length}", client);
         if (dataMessage.Last() != '/')
         {
             return false;
@@ -159,7 +159,7 @@ public class Program
 
         async Task Send(string message, int dataLength = 0)
         {
-            WriteInFile("replier.Verify(r => r.Reply(\"" + Regex.Unescape(message) + $"\")); // {dataLength}", client);
+            WriteInFile("replier.Verify(r => r.Reply(\"" + Escape(message) + $"\")); // {dataLength}", client);
             await listener.Reply(message);
         }
 
@@ -187,6 +187,11 @@ public class Program
             session.OnGoingLine = session.Message[messagePosition..];
             await SendLines(session);
         }
+    }
+
+    private static string Escape(string dataMessage)
+    {
+        return Regex.Escape(dataMessage).Replace("\\ ", " ");
     }
 
     private static void WriteInFile(string message, int client)

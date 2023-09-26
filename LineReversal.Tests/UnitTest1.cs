@@ -210,32 +210,37 @@ namespace LineReversal.Tests
         {
             Mock<IReplier> replier = new Mock<IReplier>();
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/connect/562244571/");
-            replier.Verify(r => r.Reply("/ack/562244571/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/1872234332/"); // 0
+            replier.Verify(r => r.Reply("/ack/1872234332/0/")); // 0
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/0/party my men something aid intrusion love to now favicon to nasa giant\nhypnotic/");
-            replier.Verify(r => r.Reply("/ack/562244571/79/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1872234332/0/integral good all love all come th/"); // 34
+            replier.Verify(r => r.Reply("/ack/1872234332/34/")); // 0
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/79/ aid calculator good of favic/");
-            replier.Verify(r => r.Reply("/ack/562244571/108/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1872234332/34/e sphinx the party hypn/"); // 23
+            replier.Verify(r => r.Reply("/ack/1872234332/57/")); // 0
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/79/ aid calculator good of favic/");
-            replier.Verify(r => r.Reply("/ack/562244571/108/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1872234332/57/otic for for favicon abo/"); // 24
+            replier.Verify(r => r.Reply("/ack/1872234332/81/")); // 0
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/108/on/");
-            replier.Verify(r => r.Reply("/ack/562244571/110/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1872234332/57/otic for for favicon abo/"); // 24
+            replier.Verify(r => r.Reply("/ack/1872234332/81/")); // 0
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/data/562244571/110/\n/");
-            replier.Verify(r => r.Reply("/ack/562244571/111/"));
-            replier.Verify(r => r.Reply("/data/562244571/0/tnaig asan ot nocivaf won ot evol noisurtni dia gnihtemos nem ym ytrap\nnocivaf fo doog rotaluclac dia citonpyh\n/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1872234332/81/ut royale jackdaws giant jackdaws /"); // 34
+            replier.Verify(r => r.Reply("/ack/1872234332/115/")); // 0
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/ack/562244571/111/");
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1872234332/115/goo/"); // 3
+            replier.Verify(r => r.Reply("/ack/1872234332/118/")); // 0
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/close/562244571/");
-            replier.Verify(r => r.Reply("/close/562244571/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1872234332/118/d/"); // 1
+            replier.Verify(r => r.Reply("/ack/1872234332/119/")); // 0
 
-            await LineReversal.Program.ProcessKind(replier.Object, "/close/562244571/");
-            replier.Verify(r => r.Reply("/close/562244571/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/1872234332/119/\n/"); // 1
+            replier.Verify(r => r.Reply("/ack/1872234332/120/")); // 0
+            replier.Verify(r => r.Reply("/data/1872234332/0/doog swadkcaj tnaig swadkcaj elayor tuoba nocivaf rof rof citonpyh ytrap eht xnihps eht emoc lla evol lla doog largetni\n/")); // 120
+            await LineReversal.Program.ProcessKind(replier.Object, "/ack/1872234332/120/"); // 0
+            await LineReversal.Program.ProcessKind(replier.Object, "/close/1872234332/"); // 0
+            replier.Verify(r => r.Reply("/close/1872234332/")); // 0
+
 
             replier.VerifyAll();
         }
