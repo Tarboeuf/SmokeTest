@@ -171,6 +171,41 @@ namespace LineReversal.Tests
             replier.VerifyAll();
         }
 
+
+        [Fact]
+        public async Task Fail()
+        {
+            Mock<IReplier> replier = new Mock<IReplier>();
+            await LineReversal.Program.ProcessKind(replier.Object, "/connect/905728477/");
+            replier.Verify(r => r.Reply("/ack/905728477/0/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/0/a/");
+            replier.Verify(r => r.Reply("/ack/905728477/1/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/1/b/");
+            replier.Verify(r => r.Reply("/ack/905728477/2/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/1/b/");
+            replier.Verify(r => r.Reply("/ack/905728477/2/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/2/c\nd/");
+            replier.Verify(r => r.Reply("/ack/905728477/5/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/5/e/");
+            replier.Verify(r => r.Reply("/ack/905728477/6/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/5/ef/");
+            replier.Verify(r => r.Reply("/ack/905728477/7/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/5/efg/");
+            replier.Verify(r => r.Reply("/ack/905728477/8/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/8/h/");
+            replier.Verify(r => r.Reply("/ack/905728477/9/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/data/905728477/9/\n/");
+            replier.Verify(r => r.Reply("/ack/905728477/10/"));
+            replier.Verify(r => r.Reply("/data/905728477/0/cba\nhgfed\n/"));
+            await LineReversal.Program.ProcessKind(replier.Object, "/ack/905728477/10/");
+            await LineReversal.Program.ProcessKind(replier.Object, "/close/905728477/");
+            replier.Verify(r => r.Reply("/close/905728477/"));
+
+
+
+            replier.VerifyAll();
+        }
+
         [Fact]
         public async Task MessageNotCompleteShouldNotBeenSent()
         {
