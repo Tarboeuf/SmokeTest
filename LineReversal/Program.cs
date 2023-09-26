@@ -91,7 +91,7 @@ public class Program
                 var message = parts[4];
                 
                 int finalPosition = message.Length + messagePosition;
-                if (finalPosition <= session.Message.Length)
+                if (finalPosition <= session.Message.Length || session.Message.Length < messagePosition)
                 {
                     await Send($"/ack/{client}/{session.Message.Length}/");
                     break;
